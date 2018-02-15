@@ -1,0 +1,11 @@
+[directory_name]
+default = "Hello"
+question = "Directory name?"
+
+[file_name]
+default = "Howdy"
+question = "File name?"
+
+[greeting_recipient]
+default = "Vincent"
+question = "Who am I greeting?"

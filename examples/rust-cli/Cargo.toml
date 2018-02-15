@@ -1,0 +1,10 @@
+[package]
+name = "{{bin_name}}"
+version = "0.1.0"
+authors = ["{{author_name}} <{{author_mail}}>"]
+description = "{{description}}"
+
+[dependencies]
+{%- if use_clap %}
+clap = "2"
+{% endif -%}

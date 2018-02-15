@@ -1,0 +1,15 @@
+[package]
+name = "kickstart"
+version = "0.0.1"
+description = "A simple way to get started with a project"
+authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
+license = "MIT"
+
+[[bin]]
+name = "kickstart"
+
+[dependencies]
+clap = "2"
+tera = "0.11"
+toml = "0.4"
+walkdir = "2"
