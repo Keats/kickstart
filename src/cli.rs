@@ -1,5 +1,6 @@
 use clap::{App, Arg};
 
+
 pub fn build_cli() -> App<'static, 'static> {
     App::new("kickstart")
         .version(crate_version!())
@@ -8,12 +9,12 @@ pub fn build_cli() -> App<'static, 'static> {
         .arg(
             Arg::with_name("template")
                 .required(true)
-                .help("Template to use: a local path or a url")
+                .help("Template to use: a local path or a git url")
         )
         .arg(
-            Arg::with_name("output_dir")
+            Arg::with_name("output-dir")
                 .short("o")
-                .long("output_dir")
+                .long("output-dir")
                 .takes_value(true)
                 .help("Where to output the project: defaults to the current directory")
         )

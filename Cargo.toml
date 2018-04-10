@@ -1,6 +1,6 @@
 [package]
 name = "kickstart"
-version = "0.0.1"
+version = "0.0.2"
 description = "A simple way to get started with a project"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
@@ -13,3 +13,4 @@ clap = "2"
 tera = "0.11"
 toml = "0.4"
 walkdir = "2"
+error-chain = "0.11"

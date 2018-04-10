@@ -9,3 +9,12 @@ question = "File name?"
 [greeting_recipient]
 default = "Vincent"
 question = "Who am I greeting?"
+
+[database]
+default = 1
+question = "Which database do you want to use?"
+choices = [
+    "postgres",
+    "mysql",
+    "sqlite",
+]
