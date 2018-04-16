@@ -56,29 +56,35 @@ impl Template {
         let mut context = Context::new();
 
         for (key, data) in table {
-            let question = data["question"].as_str().unwrap();
+            // TODO: print invalid questions?
+            if let Some(ref question) = data["question"].as_str() {
+                if let Some(c) = data.get("choices") {
+                    if let Some(default) = data["default"].as_integer() {
+                        let res = ask_choices(
+                            question,
+                            default as usize,
+                            c.as_array().unwrap(),
+                        )?;
+                        context.add(key, &res);
+                        continue;
+                    } else {
+                        // TODO print about wrong default for a choice question
+                        continue;
+                    }
+                }
 
-            // TODO: error handling for everything below
-
-
-            if let Some(c) = data.get("choices") {
-                let res = ask_choices(
-                    question,
-                    data["default"].as_integer().unwrap() as usize,
-                    c.as_array().unwrap()
-                )?;
-                context.add(key, &res);
-                continue;
+                if let Some(b) = data["default"].as_bool() {
+                    let res = ask_bool(question, b)?;
+                    context.add(key, &res);
+                    continue;
+                } else if let Some(s) = data["default"].as_str() {
+                    let res = ask_string(question, s)?;
+                    context.add(key, &res);
+                } else {
+                    // TODO: print unknown question type
+                }
             }
 
-            if let Some(b) = data["default"].as_bool() {
-                let res = ask_bool(question, b)?;
-                context.add(key, &res);
-                continue;
-            }
-
-            let res = ask_string(question, data["default"].as_str().unwrap())?;
-            context.add(key, &res);
         }
 
         Ok(context)

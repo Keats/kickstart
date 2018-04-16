@@ -62,7 +62,6 @@ Please choose from 1, 2, 3 [1]: 1
 
 ## TODO
 
-- error handling around questions
 - generate tmp folder name from URL
 - keep questions in order of the template.toml file: https://github.com/alexcrichton/toml-rs/issues/232
 - better looking UI (colours, progress, etc)
@@ -71,3 +70,12 @@ for example
 - cache remote repositories?
 - Add verbose name for choices?
 - make it usable as a library
+
+## Open questions
+
+- Use JSON instead of TOML? TOML is not very good overall and more confusing than JSON
+
+
+## Non-goals
+
+- Load templates from crates.io or zip files
