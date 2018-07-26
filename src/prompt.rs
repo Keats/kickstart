@@ -1,6 +1,6 @@
 use std::io::{self, Write, BufRead};
 
-use toml;
+use toml_edit;
 
 use errors::Result;
 
@@ -50,10 +50,11 @@ pub fn ask_string(question: &str, default: &str) -> Result<String> {
 }
 
 /// Ask a question to the user where they can write any string
-pub fn ask_choices(question: &str, default: usize, choices: &Vec<toml::Value>) -> Result<toml::Value> {
+pub fn ask_choices(question: &str, default: usize, choices: &toml_edit::Array) -> Result<toml_edit::Value> {
     println!("{}: ", question);
+    let mut c = choices.clone();
     let mut nums = vec![];
-    for (index, choice) in choices.iter().enumerate() {
+    for (index, choice) in c.iter().enumerate() {
         println!("{} - {}", index + 1, choice.as_str().unwrap());
         nums.push(format!("{}", index + 1));
     }
@@ -65,18 +66,18 @@ pub fn ask_choices(question: &str, default: usize, choices: &Vec<toml::Value>) -
 
 
     let res = match &*input {
-        "" => choices[default - 1].clone(),
+        "" => c.get(default - 1).unwrap().clone(),
         _ => {
             if let Ok(num) = input.parse::<usize>() {
-                if num > choices.len() {
+                if num > c.len() {
                     println!("Invalid choice: '{}'", input);
-                    ask_choices(question, default, choices)?
+                    ask_choices(question, default, &c)?
                 } else {
-                    choices[num - 1].clone()
+                    c.get(num - 1).unwrap().clone()
                 }
             } else {
                 println!("Invalid choice: '{}'", input);
-                ask_choices(question, default, choices)?
+                ask_choices(question, default, &c)?
             }
         },
     };

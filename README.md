@@ -29,6 +29,8 @@ and, later on, to have conditional questions.
 For example for a server+frontend template, the questions could look like that:
 
 ```text
+- What is the project name?:
+
 - Which database do you want to use?
 1. Postgres
 2. MySQL

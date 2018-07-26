@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate clap;
 extern crate tera;
-extern crate toml;
 extern crate walkdir;
+extern crate toml_edit;
 #[macro_use]
 extern crate error_chain;
 
