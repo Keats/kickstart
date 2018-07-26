@@ -35,7 +35,7 @@ fn main() {
 
     let template = Template::from_input(template_path);
 
-    match template.generate(output_dir) {
+    match template.generate(&output_dir) {
         Ok(_) => (),
         Err(e) => {
             println!("Failed to generate template");

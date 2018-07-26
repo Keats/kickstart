@@ -50,7 +50,7 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, conf: Document) -> Result<Context> {
+    fn ask_questions(&self, conf: &Document) -> Result<Context> {
         let table = conf.as_table();
         let mut context = Context::new();
 
@@ -89,7 +89,7 @@ impl Template {
         Ok(context)
     }
 
-    pub fn generate(&self, output_dir: PathBuf) -> Result<()> {
+    pub fn generate(&self, output_dir: &PathBuf) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -99,7 +99,7 @@ impl Template {
             Ok(d) => d,
             Err(e) => bail!("The template.toml is not valid TOML: {}", e),
         };
-        let context = self.ask_questions(conf)?;
+        let context = self.ask_questions(&conf)?;
 
         if !output_dir.exists() {
             create_directory(&output_dir)?;
