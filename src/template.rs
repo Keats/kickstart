@@ -2,15 +2,14 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use toml::{self, Value as TomlValue};
+use toml_edit::Document;
 use tera::{Tera, Context};
 use walkdir::WalkDir;
 
 use errors::{Result, ResultExt};
-use prompt::{ask_string, ask_bool};
+use prompt::{ask_string, ask_bool, ask_choices};
 use utils::{Source, get_source, read_file, write_file, create_directory};
 use utils::is_vcs;
-use prompt::ask_choices;
 
 
 #[derive(Debug, PartialEq)]
@@ -51,18 +50,19 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, conf: TomlValue) -> Result<Context> {
-        let table = conf.as_table().unwrap();
+    fn ask_questions(&self, conf: &Document) -> Result<Context> {
+        let table = conf.as_table();
         let mut context = Context::new();
 
-        for (key, data) in table {
+        for (key, data) in table.iter() {
+            let var = data.as_table().unwrap();
             // TODO: print invalid questions?
-            if let Some(ref question) = data["question"].as_str() {
-                if let Some(c) = data.get("choices") {
-                    if let Some(default) = data["default"].as_integer() {
+            if let Some(ref question) = var["question"].as_str() {
+                if let Some(c) = var.get("choices") {
+                    if let Some(default) = var["default"].as_str() {
                         let res = ask_choices(
                             question,
-                            default as usize,
+                            default,
                             c.as_array().unwrap(),
                         )?;
                         context.add(key, &res);
@@ -73,32 +73,33 @@ impl Template {
                     }
                 }
 
-                if let Some(b) = data["default"].as_bool() {
+                if let Some(b) = var["default"].as_bool() {
                     let res = ask_bool(question, b)?;
                     context.add(key, &res);
                     continue;
-                } else if let Some(s) = data["default"].as_str() {
+                } else if let Some(s) = var["default"].as_str() {
                     let res = ask_string(question, s)?;
                     context.add(key, &res);
                 } else {
                     // TODO: print unknown question type
                 }
             }
-
         }
 
         Ok(context)
     }
 
-    pub fn generate(&self, output_dir: PathBuf) -> Result<()> {
+    pub fn generate(&self, output_dir: &PathBuf) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
             bail!("template.toml is missing: is this not a kickstart template?");
         }
-        let conf: TomlValue = toml::from_str(&read_file(&conf_path)?)
-            .chain_err(|| "The template.toml is not valid TOML")?;
-        let context = self.ask_questions(conf)?;
+        let conf: Document = match read_file(&conf_path)?.parse::<Document>() {
+            Ok(d) => d,
+            Err(e) => bail!("The template.toml is not valid TOML: {}", e),
+        };
+        let context = self.ask_questions(&conf)?;
 
         if !output_dir.exists() {
             create_directory(&output_dir)?;
@@ -110,7 +111,7 @@ impl Template {
             .filter_entry(|e| !is_vcs(e))
             .filter_map(|e| e.ok());
 
-        for entry in walker{
+        for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
                 continue;
@@ -130,6 +131,8 @@ impl Template {
                 write_file(&output_dir.join(real_path), &contents)?;
             }
         }
+
+        println!("Everything done, ready to go!");
 
         Ok(())
     }

@@ -11,6 +11,6 @@ name = "kickstart"
 [dependencies]
 clap = "2"
 tera = "0.11"
-toml = "0.4"
 walkdir = "2"
 error-chain = "0.11"
+toml_edit = "0.1"

@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate clap;
 extern crate tera;
-extern crate toml;
 extern crate walkdir;
+extern crate toml_edit;
 #[macro_use]
 extern crate error_chain;
 
@@ -35,7 +35,7 @@ fn main() {
 
     let template = Template::from_input(template_path);
 
-    match template.generate(output_dir) {
+    match template.generate(&output_dir) {
         Ok(_) => (),
         Err(e) => {
             println!("Failed to generate template");
