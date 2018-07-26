@@ -11,7 +11,7 @@ default = "Vincent"
 question = "Who am I greeting?"
 
 [database]
-default = 1
+default = "postgres"
 question = "Which database do you want to use?"
 choices = [
     "postgres",

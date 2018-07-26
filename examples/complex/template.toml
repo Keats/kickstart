@@ -1,2 +1,29 @@
 [project_name]
 question = "What is the project name?"
+default = "web"
+
+[database]
+question = "Which database do you want to use?"
+default = "postgres"
+choices = [
+    "postgres",
+    "mysql",
+    "sqlite",
+]
+
+[auth_method]
+question = "How are users going to be authenticated"
+default = "passwords"
+choices = [
+    "JWT",
+    "passwords",
+    "none",
+]
+
+[sentry]
+default = true
+question = "Do you want sentry integration?"
+
+[spa]
+default = false
+question = "Is the frontend a SPA?"

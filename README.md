@@ -35,8 +35,7 @@ For example for a server+frontend template, the questions could look like that:
 1. Postgres
 2. MySQL
 3. SQLite
-4. None
-Please choose from 1, 2, 3, 4 [1]: 1
+Please choose from 1, 2, 3 [1]: 1
 
 - Which version of Postgres do you want to use?
 1. 10.3
@@ -65,18 +64,15 @@ Please choose from 1, 2, 3 [1]: 1
 ## TODO
 
 - generate tmp folder name from URL
-- keep questions in order of the template.toml file: https://github.com/alexcrichton/toml-rs/issues/232
 - better looking UI (colours, progress, etc)
 - potentially conditional questions? some questions could be asked only if a previous value has been set to true
 for example
 - cache remote repositories?
-- Add verbose name for choices?
 - make it usable as a library
 
 ## Open questions
 
 - Use JSON instead of TOML? TOML is not very good overall and more confusing than JSON
-
 
 ## Non-goals
 

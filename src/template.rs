@@ -59,13 +59,13 @@ impl Template {
             // TODO: print invalid questions?
             if let Some(ref question) = var["question"].as_str() {
                 if let Some(c) = var.get("choices") {
-                    if let Some(default) = var["default"].as_integer() {
+                    if let Some(default) = var["default"].as_str() {
                         let res = ask_choices(
                             question,
-                            default as usize,
+                            default,
                             c.as_array().unwrap(),
                         )?;
-                        context.add(key, &res.as_str().unwrap());
+                        context.add(key, &res);
                         continue;
                     } else {
                         // TODO print about wrong default for a choice question
@@ -111,7 +111,7 @@ impl Template {
             .filter_entry(|e| !is_vcs(e))
             .filter_map(|e| e.ok());
 
-        for entry in walker{
+        for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
                 continue;
@@ -131,6 +131,8 @@ impl Template {
                 write_file(&output_dir.join(real_path), &contents)?;
             }
         }
+
+        println!("Everything done, ready to go!");
 
         Ok(())
     }
