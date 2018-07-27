@@ -70,10 +70,6 @@ for example
 - cache remote repositories?
 - make it usable as a library
 
-## Open questions
-
-- Use JSON instead of TOML? TOML is not very good overall and more confusing than JSON
-
 ## Non-goals
 
 - Load templates from crates.io or zip files
