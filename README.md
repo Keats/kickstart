@@ -1,12 +1,12 @@
 # kickstart
 
-A WIP equivalent of [cookiecutter](https://github.com/audreyr/cookiecutter)
+An equivalent of [cookiecutter](https://github.com/audreyr/cookiecutter)
 in Rust.
 
 ## Run on examples
 
 - cargo run -- examples/super-basic
-- cargo run -- examples/rust-cli -o clicli
+- cargo run -- examples/complex -o Hello
 - cargo run -- git@github.com:Keats/kickstart-sample.git -o sample
 
 ## Principle
@@ -44,7 +44,7 @@ Please choose from 1, 2 [1]: 1
 
 - How are users going to be authenticated?
 1. JWT
-2. Passwords
+2. Sessions
 3. None
 Please choose from 1, 2 [1]: 1
 

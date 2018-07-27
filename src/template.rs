@@ -120,15 +120,21 @@ impl Template {
             .filter_entry(|e| !is_vcs(e))
             .filter_map(|e| e.ok());
 
-        for entry in walker {
+        'outer: for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
                 continue;
             }
 
             let path = entry.path().strip_prefix(&self.path).unwrap();
+            let path_str = format!("{}", path.display());
+            for ignored in &definition.ignore {
+                if ignored == &path_str || path_str.starts_with(ignored) {
+                    continue 'outer;
+                }
+            }
 
-            let tpl = Tera::one_off(&format!("{}", path.display()), &context, false)
+            let tpl = Tera::one_off(&path_str, &context, false)
                 .map_err(|err| new_error(ErrorKind::Tera {err, path: path.to_path_buf()}))?;
             let real_path = Path::new(&tpl);
 
