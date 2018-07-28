@@ -73,7 +73,7 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
 pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::Array) -> Result<toml::Value> {
     println!("- {}: ", prompt);
     let mut lines = vec![];
-    let mut default_index = 0;
+    let mut default_index = 1;
 
     for (index, choice) in choices.iter().enumerate() {
         println!("{}. {}", index + 1, choice);

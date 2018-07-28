@@ -29,7 +29,7 @@ pub struct TemplateDefinition {
     /// Name of the template
     pub name: String,
     /// What this template is about
-    pub description: String,
+    pub description: Option<String>,
     /// Template version
     pub version: Option<String>,
     /// Version of the kickstart template spec

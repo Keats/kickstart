@@ -35,8 +35,7 @@ impl Template {
     pub fn from_git(remote: &str) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        // TODO: generate name from remote
-        tmp.push("kickstart-tmp");
+        tmp.push(remote.split("/").last().unwrap_or_else(|| "kickstart"));
         println!("Cloning the repository in your temporary folder...");
 
         match Repository::clone(remote, &tmp) {
