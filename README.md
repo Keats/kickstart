@@ -29,7 +29,7 @@ $ cargo install kickstart
 $ kickstart examples/super-basic
 $ kickstart examples/complex -o Hello
 # Anywhere
-$ kickstart git@github.com:Keats/kickstart-sample.git -o sample
+$ kickstart https://github.com/Keats/kickstart-sample -o sample
 ```
 
 ## Creating your own template
