@@ -7,6 +7,9 @@ ignore = [
     ".travis.yml",
     "docs",
 ]
+copy_without_render = [
+    "*.html",
+]
 
 [[variables]]
 name = "project_name"
