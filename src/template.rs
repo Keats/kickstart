@@ -1,16 +1,20 @@
 use std::env;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::io::Read;
+use std::fs::{self, File};
+use std::str;
 
 use toml::{self, Value};
 use tera::{Tera, Context};
 use walkdir::WalkDir;
 use git2::Repository;
+use glob::Pattern;
 
 use errors::{Result, ErrorKind, new_error};
 use prompt::{ask_string, ask_bool, ask_choices, ask_integer};
 use utils::{Source, get_source, read_file, write_file, create_directory};
-use utils::is_vcs;
+use utils::{is_vcs, is_binary};
 use definition::TemplateDefinition;
 
 
@@ -114,6 +118,12 @@ impl Template {
             create_directory(&output_dir)?;
         }
 
+        // Create the glob patterns first, only once
+        let patterns: Vec<Pattern> = definition.copy_without_render
+            .iter()
+            .map(|s| Pattern::new(s).unwrap())
+            .collect();
+
         // And now generate the files in the output dir given
         let walker = WalkDir::new(&self.path)
             .into_iter()
@@ -135,16 +145,31 @@ impl Template {
             }
 
             let tpl = Tera::one_off(&path_str, &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera {err, path: path.to_path_buf()}))?;
-            let real_path = Path::new(&tpl);
+                .map_err(|err| new_error(ErrorKind::Tera { err, path: path.to_path_buf() }))?;
+
+            let real_path = output_dir.join(Path::new(&tpl));
 
             if entry.path().is_dir() {
-                create_directory(&output_dir.join(real_path))?;
-            } else {
-                let contents = Tera::one_off(&read_file(&entry.path())?, &context, false)
-                    .map_err(|err| new_error(ErrorKind::Tera {err, path: path.to_path_buf()}))?;
-                write_file(&output_dir.join(real_path), &contents)?;
+                create_directory(&real_path)?;
+                continue;
             }
+
+            // Only pass non-binary files or the files not matching the copy_without_render patterns through Tera
+            let mut f = File::open(&entry.path())?;
+            let mut buffer = Vec::new();
+            f.read_to_end(&mut buffer)?;
+
+            let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
+
+            if no_render || is_binary(&buffer) {
+                fs::copy(&entry.path(), &real_path)
+                    .map_err(|err| new_error(ErrorKind::Io { err, path: entry.path().to_path_buf() }))?;
+                continue;
+            }
+
+            let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
+                .map_err(|err| new_error(ErrorKind::Tera {err, path: entry.path().to_path_buf()}))?;
+            write_file(&real_path, &contents)?;
         }
 
         println!("Everything done, ready to go!");

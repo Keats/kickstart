@@ -7,6 +7,8 @@ extern crate toml;
 extern crate serde_derive;
 extern crate serde;
 extern crate git2;
+extern crate memchr;
+extern crate glob;
 
 use std::env;
 use std::path::Path;

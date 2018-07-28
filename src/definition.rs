@@ -43,6 +43,7 @@ pub struct TemplateDefinition {
     #[serde(default)]
     pub keywords: Vec<String>,
     /// Do not copy those directories/files
+    #[serde(default)]
     pub ignore: Vec<String>,
     /// Do not pass those files through Tera
     /// http://cookiecutter.readthedocs.io/en/latest/advanced/copy_without_render.html

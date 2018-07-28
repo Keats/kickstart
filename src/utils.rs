@@ -1,9 +1,12 @@
 use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+
 use walkdir::DirEntry;
+use memchr::memchr;
 
 use errors::{Result, ErrorKind, new_error};
+
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -56,4 +59,9 @@ pub fn is_vcs(entry: &DirEntry) -> bool {
          .to_str()
          .map(|s| s.starts_with(".git"))
          .unwrap_or(false)
+}
+
+/// See https://twitter.com/20100Prouillet/status/1022973478096527360
+pub fn is_binary(buf: &[u8]) -> bool {
+    memchr(b'\x00', buf).is_some()
 }
