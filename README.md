@@ -20,12 +20,15 @@ $ cargo install kickstart
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author.md}}` is a valid path
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/)
 - Choose your own adventure: supports conditional questions based on previous answers
+- Can load templates from a local directory or from a Git repository
 
-## Run on examples
+## Try it out
 
 ```bash
+# From the root of this repo
 $ kickstart examples/super-basic
 $ kickstart examples/complex -o Hello
+# Anywhere
 $ kickstart git@github.com:Keats/kickstart-sample.git -o sample
 ```
 
@@ -41,7 +44,7 @@ description = "A fully-featured Django template"
 # Required, the version of the kickstart schema, currently only `1` is used
 kickstart_version = 1
 # Optional, the URL of the template
-url = https://google.com"
+url = "https://google.com"
 # Optional, a list of authors for this template
 authors = [
 
@@ -139,3 +142,7 @@ And two more optional fields:
 
 - `choices`: a list of potential values, `kickstart` will make the user pick one
 - `only_if`: this question will only be asked if the variable `name` has the value `value`
+
+## List of templates
+
+None for now.
