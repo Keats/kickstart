@@ -36,6 +36,9 @@ impl Template {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
         tmp.push(remote.split("/").last().unwrap_or_else(|| "kickstart"));
+        if tmp.exists() {
+            fs::remove_dir_all(&tmp)?;
+        }
         println!("Cloning the repository in your temporary folder...");
 
         match Repository::clone(remote, &tmp) {
