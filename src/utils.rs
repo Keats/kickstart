@@ -1,9 +1,12 @@
 use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
-use walkdir::DirEntry;
 
-use errors::{Result, ResultExt};
+use walkdir::DirEntry;
+use memchr::memchr;
+
+use errors::{Result, ErrorKind, new_error};
+
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -12,12 +15,17 @@ pub enum Source {
 }
 
 pub fn read_file(p: &Path) -> Result<String> {
-    let mut f = File::open(p)
-        .chain_err(|| format!("File {} not found or not readable", p.display()))?;
+    let mut f = match File::open(p) {
+        Ok(f) => f,
+        Err(err) => return Err(new_error(ErrorKind::Io {err, path: p.to_path_buf()}))
+    };
+
 
     let mut contents = String::new();
-    f.read_to_string(&mut contents)
-        .chain_err(|| format!("Could not read {}", p.display()))?;
+    match f.read_to_string(&mut contents) {
+        Ok(_) => (),
+        Err(err) => return Err(new_error(ErrorKind::Io {err, path: p.to_path_buf()}))
+    };
 
     Ok(contents)
 }
@@ -51,4 +59,9 @@ pub fn is_vcs(entry: &DirEntry) -> bool {
          .to_str()
          .map(|s| s.starts_with(".git"))
          .unwrap_or(false)
+}
+
+/// See https://twitter.com/20100Prouillet/status/1022973478096527360
+pub fn is_binary(buf: &[u8]) -> bool {
+    memchr(b'\x00', buf).is_some()
 }

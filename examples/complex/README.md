@@ -1,16 +1,7 @@
-# {{ project_name | capitalize }}
+# A Django template
 
-## How to run
+Powered by kickstart.
 
-### Backend
+## Features
 
-The backend is written in Rust and can be ran the following way:
-
-```rust
-$ cargo run
-```
-
-{% if spa %}
-### Frontend
-The frontend is written in TypeScript.
-{% endif %}
+## Usage

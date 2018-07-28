@@ -1,8 +1,8 @@
 use std::io::{self, Write, BufRead};
 
-use toml_edit;
+use toml;
 
-use errors::Result;
+use errors::{Result, new_error, ErrorKind};
 
 
 /// Wait for user input and return what they typed
@@ -13,12 +13,12 @@ fn read_line() -> Result<String> {
     lines
         .next()
         .and_then(|l| l.ok())
-        .ok_or_else(|| "Unable to read from std".into())
+        .ok_or_else(|| new_error(ErrorKind::UnreadableStdin))
 }
 
 /// Ask a yes/no question to the user
-pub fn ask_bool(question: &str, default: bool) -> Result<bool> {
-    print!("- {} {}: ", question, if default { "[Y/n]" } else { "[y/N]" });
+pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
+    print!("- {} {}: ", prompt, if default { "[Y/n]" } else { "[y/N]" });
     let _ = io::stdout().flush();
     let input = read_line()?;
 
@@ -28,7 +28,7 @@ pub fn ask_bool(question: &str, default: bool) -> Result<bool> {
         "" => default,
         _ => {
             println!("Invalid choice: '{}'", input);
-            ask_bool(question, default)?
+            ask_bool(prompt, default)?
         },
     };
 
@@ -36,8 +36,8 @@ pub fn ask_bool(question: &str, default: bool) -> Result<bool> {
 }
 
 /// Ask a question to the user where they can write any string
-pub fn ask_string(question: &str, default: &str) -> Result<String> {
-    print!("- {} ({}): ", question, default);
+pub fn ask_string(prompt: &str, default: &str) -> Result<String> {
+    print!("- {} ({}): ", prompt, default);
     let _ = io::stdout().flush();
     let input = read_line()?;
 
@@ -49,40 +49,59 @@ pub fn ask_string(question: &str, default: &str) -> Result<String> {
     Ok(res)
 }
 
-/// Ask a question to the user where they can write any string
-pub fn ask_choices(question: &str, default: &str, choices: &toml_edit::Array) -> Result<String> {
-    println!("- {}: ", question);
-    let mut c = choices.clone();
-    let mut nums = vec![];
-    let mut default_index = 0;
-    for (index, choice) in c.iter().enumerate() {
-        let name = choice.as_str().unwrap();
-        println!("{}. {}", index + 1, name);
-        nums.push(format!("{}", index + 1));
-        if name == default {
+/// Ask a question to the user where they can write an integer
+pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
+    print!("- {} ({}): ", prompt, default);
+    let _ = io::stdout().flush();
+    let input = read_line()?;
+
+    let res = match &*input {
+        "" => default,
+        _ => match input.parse::<i64>() {
+            Ok(i) => i,
+            Err(_) => {
+                println!("Invalid integer: '{}'", input);
+                ask_integer(prompt, default)?
+            }
+        },
+    };
+
+    Ok(res)
+}
+
+/// Ask users to make a choice between various options
+pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::Array) -> Result<toml::Value> {
+    println!("- {}: ", prompt);
+    let mut lines = vec![];
+    let mut default_index = 1;
+
+    for (index, choice) in choices.iter().enumerate() {
+        println!("{}. {}", index + 1, choice);
+
+        lines.push(format!("{}", index + 1));
+        if choice == default {
             default_index = index + 1;
         }
     }
 
-    print!("Choose from {} ({}): ", nums.join(", "), default_index);
+    print!("Choose from {} ({}): ", lines.join(", "), default_index);
 
     let _ = io::stdout().flush();
     let input = read_line()?;
 
-
     let res = match &*input {
-        "" => default.to_string(),
+        "" => default.clone(),
         _ => {
             if let Ok(num) = input.parse::<usize>() {
-                if num > c.len() {
+                if num > choices.len() {
                     println!("Invalid choice: '{}'", input);
-                    ask_choices(question, default, &c)?
+                    ask_choices(prompt, default, choices)?
                 } else {
-                    c.get(num - 1).unwrap().as_str().unwrap().to_string()
+                    choices.get(num - 1).unwrap().clone()
                 }
             } else {
                 println!("Invalid choice: '{}'", input);
-                ask_choices(question, default, &c)?
+                ask_choices(prompt, default, choices)?
             }
         },
     };

@@ -2,27 +2,39 @@
 extern crate clap;
 extern crate tera;
 extern crate walkdir;
-extern crate toml_edit;
+extern crate toml;
 #[macro_use]
-extern crate error_chain;
+extern crate serde_derive;
+extern crate serde;
+extern crate git2;
+extern crate memchr;
+extern crate glob;
 
 use std::env;
 use std::path::Path;
 
 mod cli;
-mod template;
+mod definition;
+pub mod template;
 mod prompt;
 mod utils;
-mod errors;
+pub mod errors;
 
 use template::Template;
-use errors::Error;
+use errors::{Error, ErrorKind};
 
-pub fn unravel_errors(error: &Error) {
-    println!("Error: {}", error);
-    for e in error.iter().skip(1) {
-        println!("Reason: {}", e);
-    }
+fn bail(e: Error) -> ! {
+    // Special handling for Tera error-chain
+    match e.kind() {
+        ErrorKind::Tera {ref err, ..} => {
+            println!("{}", e);
+            for e in err.iter().skip(1) {
+                println!("{}", e);
+            }
+        },
+        _ => println!("{}", e)
+    };
+    ::std::process::exit(1);
 }
 
 
@@ -33,14 +45,13 @@ fn main() {
         .map(|p| Path::new(p).to_path_buf())
         .unwrap_or_else(|| env::current_dir().unwrap());
 
-    let template = Template::from_input(template_path);
+    let template = match Template::from_input(template_path) {
+        Ok(t) => t,
+        Err(e) => bail(e),
+    };
 
     match template.generate(&output_dir) {
         Ok(_) => (),
-        Err(e) => {
-            println!("Failed to generate template");
-            unravel_errors(&e);
-            ::std::process::exit(1);
-        }
-    }
+        Err(e) => bail(e),
+    };
 }

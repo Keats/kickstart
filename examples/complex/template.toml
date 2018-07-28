@@ -1,29 +1,73 @@
-[project_name]
-question = "What is the project name?"
-default = "web"
+name = "Django"
+description = "A fully-featured Django template"
+kickstart_version = 1
+ignore = [
+    "README.md",
+    "CONTRIBUTING.md",
+    ".travis.yml",
+    "docs",
+]
+copy_without_render = [
+    "*.html",
+]
 
-[database]
-question = "Which database do you want to use?"
+[[variables]]
+name = "project_name"
+default = "My Project"
+prompt = "What is the name of this project?"
+
+[[variables]]
+name = "database"
 default = "postgres"
-choices = [
-    "postgres",
-    "mysql",
-    "sqlite",
-]
+prompt = "Which database do you want to use?"
+choices = ["postgres", "mysql", "sqlite"]
 
-[auth_method]
-question = "How are users going to be authenticated"
-default = "passwords"
-choices = [
-    "JWT",
-    "passwords",
-    "none",
+[[variables]]
+name = "pg_version"
+default = "10.4"
+prompt = "Which version of Postgres?"
+choices =  [
+    "10.4",
+    "10.3",
+    "10.2",
+    "10.1",
+    "9.6",
+    "9.5",
+    "9.4",
+    "9.3",
 ]
+only_if = { name = "database", value = "postgres" }
 
-[sentry]
+[[variables]]
+name = "auth_method"
+default = "jwt"
+prompt = "How are users going to be authenticated?"
+choices = ["jwt", "sessions", "none"]
+
+[[variables]]
+name = "sentry"
 default = true
-question = "Do you want sentry integration?"
+prompt = "Do you want to add Sentry integration?"
 
-[spa]
+[[variables]]
+name = "spa"
 default = false
-question = "Is the frontend a SPA?"
+prompt = "Is the frontend a SPA?"
+
+[[variables]]
+name = "js_framework"
+default = "React"
+prompt = "Which JS framework do you want to setup?"
+choices =  [
+    "React",
+    "Angular",
+    "Vue",
+    "None",
+]
+only_if = { name = "spa", value = true }
+
+[[variables]]
+name = "typescript"
+default = true
+prompt = "Do you want to use TypeScript?"
+only_if = { name = "spa", value = true }

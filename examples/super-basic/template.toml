@@ -1,20 +1,18 @@
-[directory_name]
+name = "Super basic"
+description = "A very simple template"
+kickstart_version = 1
+
+[[variables]]
+name = "directory_name"
 default = "Hello"
-question = "Directory name?"
+prompt = "Directory name?"
 
-[file_name]
+[[variables]]
+name = "file_name"
 default = "Howdy"
-question = "File name?"
+prompt = "File name?"
 
-[greeting_recipient]
+[[variables]]
+name = "greeting_recipient"
 default = "Vincent"
-question = "Who am I greeting?"
-
-[database]
-default = "postgres"
-question = "Which database do you want to use?"
-choices = [
-    "postgres",
-    "mysql",
-    "sqlite",
-]
+prompt = "Who am I greeting?"

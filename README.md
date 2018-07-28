@@ -1,79 +1,148 @@
 # kickstart
 
-A WIP equivalent of [cookiecutter](https://github.com/audreyr/cookiecutter)
-in Rust.
+A CLI tool to easily get a new project up and running by using pre-made templates.
+This is a more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
-## Run on examples
+## Installation
 
-- cargo run -- examples/super-basic
-- cargo run -- examples/rust-cli -o clicli
-- cargo run -- git@github.com:Keats/kickstart-sample.git -o sample
+Currently, `kickstart` is available only through crates.io:
 
-## Principle
-
-Templates are just moving files/directories from a source to a destination but
-being to customise it is essential, otherwise you can just do a `git clone` and be done with it.
-
-In short the most important points are:
-
-- asking the user questions to personalize the result
-- work with local folders and remote URLs (git only for now)
-- a template engine with whitespace management so the result files look handwritten
-
-Since we are only dealing with files and directories, the tool is completely language-agnostic as well.
-
-It is very largely inspired by [cookiecutter](https://github.com/audreyr/cookiecutter) but trying to
-give a slightly better UX by allowing template writers to formulate questions rather than use the variable name
-and, later on, to have conditional questions.
-
-For example for a server+frontend template, the questions could look like that:
-
-```text
-- What is the project name?:
-
-- Which database do you want to use?
-1. Postgres
-2. MySQL
-3. SQLite
-Please choose from 1, 2, 3 [1]: 1
-
-- Which version of Postgres do you want to use?
-1. 10.3
-2. 9.6
-Please choose from 1, 2 [1]: 1
-
-- How are users going to be authenticated?
-1. JWT
-2. Passwords
-3. None
-Please choose from 1, 2 [1]: 1
-
-- Do you want to add Sentry integration? [Y/n]: y
-
-- Is the frontend a SPA? [y/N]: y
-
-- Which JS framework do you want to setup?
-1. React
-2. Angular
-3. Vue
-Please choose from 1, 2, 3 [1]: 1
-
-- Do you want to use TypeScript? [Y/n]: y
+```bash
+$ cargo install kickstart
 ```
 
-## TODO
+## Features
 
-- generate tmp folder name from URL
-- better looking UI (colours, progress, etc)
-- potentially conditional questions? some questions could be asked only if a previous value has been set to true
-for example
-- cache remote repositories?
-- make it usable as a library
+- Cross-platform: Windows, Mac and Linux supported
+- Single binary: no need to install a virtualenv or anything else
+- Templaces can be made for any kind of projects, not limited to Rust
+- Simple CLI usage: only one command
+- Directory names and filenames can be templated: `{{ repo_name }}/{{author.md}}` is a valid path
+- All templating done through [Tera](https://tera.netlify.com/docs/installation/)
+- Choose your own adventure: supports conditional questions based on previous answers
+- Can load templates from a local directory or from a Git repository
 
-## Open questions
+## Try it out
 
-- Use JSON instead of TOML? TOML is not very good overall and more confusing than JSON
+```bash
+# From the root of this repo
+$ kickstart examples/super-basic
+$ kickstart examples/complex -o Hello
+# Anywhere
+$ kickstart https://github.com/Keats/kickstart-sample -o sample
+```
 
-## Non-goals
+## Creating your own template
+Creating a template is fairly simple: create files and then just add a `template.toml` in the root folder. Here is a description of all the fields available in it:
 
-- Load templates from crates.io or zip files
+
+```toml
+# Required, name of the template
+name = "Django"
+# Optional, longer form description
+description = "A fully-featured Django template"
+# Required, the version of the kickstart schema, currently only `1` is used
+kickstart_version = 1
+# Optional, the URL of the template
+url = "https://google.com"
+# Optional, a list of authors for this template
+authors = [
+
+]
+# Optional, a list of keywords for this template
+kewyords = [
+
+]
+# Optional, those files will NOT be copied over when generating the template
+# Use it to remove template-specific like its CI or its README/docs
+ignore = [
+    "README.md",
+    "CONTRIBUTING.md",
+    ".travis.yml",
+    "docs",
+]
+# Optional, a list of patterns. All files matching one of the patterns will
+# be copied over without going through Tera.
+# Use it for files that contain syntax similar to Tera for example
+copy_without_render = [
+    "*.html",
+]
+
+# A list of variables, the schema is explained in detail below
+[[variables]]
+name = "project_name"
+default = "My Project"
+prompt = "What is the name of this project?"
+
+[[variables]]
+name = "database"
+default = "postgres"
+prompt = "Which database do you want to use?"
+choices = ["postgres", "mysql", "sqlite"]
+
+[[variables]]
+name = "pg_version"
+default = "10.4"
+prompt = "Which version of Postgres?"
+choices =  [
+    "10.4",
+    "10.3",
+    "10.2",
+    "10.1",
+    "9.6",
+    "9.5",
+    "9.4",
+    "9.3",
+]
+only_if = { name = "database", value = "postgres" }
+
+[[variables]]
+name = "auth_method"
+default = "jwt"
+prompt = "How are users going to be authenticated?"
+choices = ["jwt", "sessions", "none"]
+
+[[variables]]
+name = "sentry"
+default = true
+prompt = "Do you want to add Sentry integration?"
+
+[[variables]]
+name = "spa"
+default = false
+prompt = "Is the frontend a SPA?"
+
+[[variables]]
+name = "js_framework"
+default = "React"
+prompt = "Which JS framework do you want to setup?"
+choices =  [
+    "React",
+    "Angular",
+    "Vue",
+    "None",
+]
+only_if = { name = "spa", value = true }
+
+[[variables]]
+name = "typescript"
+default = true
+prompt = "Do you want to use TypeScript?"
+only_if = { name = "spa", value = true }
+
+```
+
+A variable has the following required fields:
+
+- `name`: the name of the variable in Tera context
+- `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported)
+- `prompt`: the text to display to the user
+
+And two more optional fields:
+
+- `choices`: a list of potential values, `kickstart` will make the user pick one
+- `only_if`: this question will only be asked if the variable `name` has the value `value`
+
+## List of templates
+
+None for now.

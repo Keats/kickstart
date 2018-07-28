@@ -1,15 +1,21 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::collections::HashMap;
+use std::io::Read;
+use std::fs::{self, File};
+use std::str;
 
-use toml_edit::Document;
+use toml::{self, Value};
 use tera::{Tera, Context};
 use walkdir::WalkDir;
+use git2::Repository;
+use glob::Pattern;
 
-use errors::{Result, ResultExt};
-use prompt::{ask_string, ask_bool, ask_choices};
+use errors::{Result, ErrorKind, new_error};
+use prompt::{ask_string, ask_bool, ask_choices, ask_integer};
 use utils::{Source, get_source, read_file, write_file, create_directory};
-use utils::is_vcs;
+use utils::{is_vcs, is_binary};
+use definition::TemplateDefinition;
 
 
 #[derive(Debug, PartialEq)]
@@ -19,29 +25,25 @@ pub struct Template {
 }
 
 impl Template {
-    pub fn from_input(input: &str) -> Template {
+    pub fn from_input(input: &str) -> Result<Template> {
         match get_source(input) {
             Source::Git(remote) => Template::from_git(&remote),
-            Source::Local(path) => Template::from_local(&path),
+            Source::Local(path) => Ok(Template::from_local(&path)),
         }
     }
 
-    pub fn from_git(remote: &str) -> Template {
+    pub fn from_git(remote: &str) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        // TODO: generate name from remote
-        let repo_name = "kickstart-tmp";
+        tmp.push(remote.split("/").last().unwrap_or_else(|| "kickstart"));
         println!("Cloning the repository in your temporary folder...");
 
-        Command::new("git")
-            .current_dir(&tmp)
-            .args(&["clone", remote, repo_name])
-            .output()
-            .expect("Git didn't work, add error handling");
+        match Repository::clone(remote, &tmp) {
+            Ok(_) => (),
+            Err(e) => return Err(new_error(ErrorKind::Git(e))),
+        };
 
-        tmp.push(repo_name);
-
-        Template::from_local(&tmp)
+        Ok(Template::from_local(&tmp))
     }
 
     pub fn from_local(path: &PathBuf) -> Template {
@@ -50,39 +52,49 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, conf: &Document) -> Result<Context> {
-        let table = conf.as_table();
+    fn ask_questions(&self, def: &TemplateDefinition) -> Result<Context> {
         let mut context = Context::new();
+        // Tera context doesn't expose a way to get value from a context
+        // so we store them in another hashmap
+        let mut vals = HashMap::new();
 
-        for (key, data) in table.iter() {
-            let var = data.as_table().unwrap();
-            // TODO: print invalid questions?
-            if let Some(ref question) = var["question"].as_str() {
-                if let Some(c) = var.get("choices") {
-                    if let Some(default) = var["default"].as_str() {
-                        let res = ask_choices(
-                            question,
-                            default,
-                            c.as_array().unwrap(),
-                        )?;
-                        context.add(key, &res);
-                        continue;
-                    } else {
-                        // TODO print about wrong default for a choice question
+        for var in &def.variables {
+            // Skip the question if the value is different from the condition
+            if let Some(ref cond) = var.only_if {
+                if let Some(val) = vals.get(&cond.name) {
+                    if *val != cond.value {
                         continue;
                     }
                 }
+            }
 
-                if let Some(b) = var["default"].as_bool() {
-                    let res = ask_bool(question, b)?;
-                    context.add(key, &res);
+            if let Some(ref choices) = var.choices {
+                let res = ask_choices(&var.prompt, &var.default, choices)?;
+                context.add(&var.name, &res);
+                vals.insert(var.name.clone(), res);
+                continue;
+            }
+
+            match &var.default {
+                Value::Boolean(b) => {
+                    let res = ask_bool(&var.prompt, *b)?;
+                    context.add(&var.name, &res);
+                    vals.insert(var.name.clone(), Value::Boolean(res));
                     continue;
-                } else if let Some(s) = var["default"].as_str() {
-                    let res = ask_string(question, s)?;
-                    context.add(key, &res);
-                } else {
-                    // TODO: print unknown question type
-                }
+                },
+                Value::String(s) => {
+                    let res = ask_string(&var.prompt, &s)?;
+                    context.add(&var.name, &res);
+                    vals.insert(var.name.clone(), Value::String(res));
+                    continue;
+                },
+                Value::Integer(i) => {
+                    let res = ask_integer(&var.prompt, *i)?;
+                    context.add(&var.name, &res);
+                    vals.insert(var.name.clone(), Value::Integer(res));
+                    continue;
+                },
+                _ => panic!("Unsupported TOML type in a question: {:?}", var.default)
             }
         }
 
@@ -93,17 +105,23 @@ impl Template {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
-            bail!("template.toml is missing: is this not a kickstart template?");
+            return Err(new_error(ErrorKind::MissingTemplateDefinition));
         }
-        let conf: Document = match read_file(&conf_path)?.parse::<Document>() {
-            Ok(d) => d,
-            Err(e) => bail!("The template.toml is not valid TOML: {}", e),
-        };
-        let context = self.ask_questions(&conf)?;
+
+        let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
+            .map_err(|_| new_error(ErrorKind::InvalidTemplate))?;
+
+        let context = self.ask_questions(&definition)?;
 
         if !output_dir.exists() {
             create_directory(&output_dir)?;
         }
+
+        // Create the glob patterns first, only once
+        let patterns: Vec<Pattern> = definition.copy_without_render
+            .iter()
+            .map(|s| Pattern::new(s).unwrap())
+            .collect();
 
         // And now generate the files in the output dir given
         let walker = WalkDir::new(&self.path)
@@ -111,25 +129,46 @@ impl Template {
             .filter_entry(|e| !is_vcs(e))
             .filter_map(|e| e.ok());
 
-        for entry in walker {
+        'outer: for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
                 continue;
             }
 
             let path = entry.path().strip_prefix(&self.path).unwrap();
+            let path_str = format!("{}", path.display());
+            for ignored in &definition.ignore {
+                if ignored == &path_str || path_str.starts_with(ignored) {
+                    continue 'outer;
+                }
+            }
 
-            let tpl = Tera::one_off(&format!("{}", path.display()), &context, false)
-                .chain_err(|| format!("Failed to render {}", path.display()))?;
-            let real_path = Path::new(&tpl);
+            let tpl = Tera::one_off(&path_str, &context, false)
+                .map_err(|err| new_error(ErrorKind::Tera { err, path: path.to_path_buf() }))?;
+
+            let real_path = output_dir.join(Path::new(&tpl));
 
             if entry.path().is_dir() {
-                create_directory(&output_dir.join(real_path))?;
-            } else {
-                let contents = Tera::one_off(&read_file(&entry.path())?, &context, false)
-                    .chain_err(|| format!("Failed to render {}", path.display()))?;
-                write_file(&output_dir.join(real_path), &contents)?;
+                create_directory(&real_path)?;
+                continue;
             }
+
+            // Only pass non-binary files or the files not matching the copy_without_render patterns through Tera
+            let mut f = File::open(&entry.path())?;
+            let mut buffer = Vec::new();
+            f.read_to_end(&mut buffer)?;
+
+            let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
+
+            if no_render || is_binary(&buffer) {
+                fs::copy(&entry.path(), &real_path)
+                    .map_err(|err| new_error(ErrorKind::Io { err, path: entry.path().to_path_buf() }))?;
+                continue;
+            }
+
+            let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
+                .map_err(|err| new_error(ErrorKind::Tera {err, path: entry.path().to_path_buf()}))?;
+            write_file(&real_path, &contents)?;
         }
 
         println!("Everything done, ready to go!");

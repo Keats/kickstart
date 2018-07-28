@@ -1,1 +1,0 @@
-# {{ bin_name | capitalize }}
