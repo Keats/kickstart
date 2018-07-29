@@ -1,7 +1,7 @@
 # kickstart
 
 A CLI tool to easily get a new project up and running by using pre-made templates.
-This is a more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
+This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
 ## Installation
 
