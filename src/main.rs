@@ -9,6 +9,7 @@ extern crate serde;
 extern crate git2;
 extern crate memchr;
 extern crate glob;
+extern crate regex;
 
 use std::env;
 use std::path::Path;

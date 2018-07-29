@@ -71,8 +71,9 @@ copy_without_render = [
 # A list of variables, the schema is explained in detail below
 [[variables]]
 name = "project_name"
-default = "My Project"
+default = "my-project"
 prompt = "What is the name of this project?"
+validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
 [[variables]]
 name = "database"
@@ -142,7 +143,14 @@ And two more optional fields:
 
 - `choices`: a list of potential values, `kickstart` will make the user pick one
 - `only_if`: this question will only be asked if the variable `name` has the value `value`
+- `validation`: a Regex pattern to check when getting a string value
 
 ## List of templates
 
 None for now.
+
+## Changelog
+
+### 0.1.1 (unreleased)
+
+- Add optional `validation` field to validate a string against a regex

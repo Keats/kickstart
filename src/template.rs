@@ -86,7 +86,7 @@ impl Template {
                     continue;
                 },
                 Value::String(s) => {
-                    let res = ask_string(&var.prompt, &s)?;
+                    let res = ask_string(&var.prompt, &s, &var.validation)?;
                     context.add(&var.name, &res);
                     vals.insert(var.name.clone(), Value::String(res));
                     continue;

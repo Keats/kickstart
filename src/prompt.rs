@@ -1,5 +1,6 @@
 use std::io::{self, Write, BufRead};
 
+use regex::Regex;
 use toml;
 
 use errors::{Result, new_error, ErrorKind};
@@ -36,14 +37,26 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
 }
 
 /// Ask a question to the user where they can write any string
-pub fn ask_string(prompt: &str, default: &str) -> Result<String> {
+pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> Result<String> {
     print!("- {} ({}): ", prompt, default);
     let _ = io::stdout().flush();
     let input = read_line()?;
 
     let res = match &*input {
         "" => default.to_string(),
-        _ => input,
+        _ => {
+            if let Some(ref pattern) = validation {
+                let re = Regex::new(pattern).unwrap();
+                if re.is_match(&input) {
+                    input
+                } else {
+                    println!("The value needs to pass the regex: {}", pattern);
+                    ask_string(prompt, default, validation)?
+                }
+            } else {
+                input
+            }
+        },
     };
 
     Ok(res)
