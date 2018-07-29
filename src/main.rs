@@ -10,15 +10,17 @@ extern crate git2;
 extern crate memchr;
 extern crate glob;
 extern crate regex;
+extern crate term;
 
 use std::env;
 use std::path::Path;
 
 mod cli;
 mod definition;
-pub mod template;
 mod prompt;
 mod utils;
+mod print;
+pub mod template;
 pub mod errors;
 
 use template::Template;
@@ -28,12 +30,12 @@ fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
     match e.kind() {
         ErrorKind::Tera {ref err, ..} => {
-            println!("{}", e);
+            print::error(&format!("{}", e));
             for e in err.iter().skip(1) {
-                println!("{}", e);
+                print::error(&format!("{}", e));
             }
         },
-        _ => println!("{}", e)
+        _ => print::error(&format!("{}", e))
     };
     ::std::process::exit(1);
 }
@@ -52,7 +54,7 @@ fn main() {
     };
 
     match template.generate(&output_dir) {
-        Ok(_) => (),
+        Ok(_) => print::success("\nEverything done, ready to go!\n"),
         Err(e) => bail(e),
     };
 }

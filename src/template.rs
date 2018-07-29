@@ -174,8 +174,6 @@ impl Template {
             write_file(&real_path, &contents)?;
         }
 
-        println!("Everything done, ready to go!");
-
         Ok(())
     }
 }

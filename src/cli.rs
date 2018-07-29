@@ -9,7 +9,7 @@ pub fn build_cli() -> App<'static, 'static> {
         .arg(
             Arg::with_name("template")
                 .required(true)
-                .help("Template to use: a local path or a git url")
+                .help("Template to use: a local path or a HTTP url pointing to a Git repository")
         )
         .arg(
             Arg::with_name("output-dir")
