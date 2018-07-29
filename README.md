@@ -17,7 +17,7 @@ $ cargo install kickstart
 - Single binary: no need to install a virtualenv or anything else
 - Templaces can be made for any kind of projects, not limited to Rust
 - Simple CLI usage: only one command
-- Directory names and filenames can be templated: `{{ repo_name }}/{{author.md}}` is a valid path
+- Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/)
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
@@ -154,3 +154,4 @@ None for now.
 ### 0.1.1 (unreleased)
 
 - Add optional `validation` field to validate a string against a regex
+- Add colours and boldness to CLI
