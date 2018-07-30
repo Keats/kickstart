@@ -38,7 +38,7 @@ pub enum ErrorKind {
     Git,
 
     Io { err: io::Error, path: PathBuf },
-    Tera { err: tera::Error, path: PathBuf },
+    Tera { err: tera::Error, path: Option<PathBuf> },
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -84,7 +84,13 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
             ErrorKind::Io {ref err, ref path } => write!(f, "{}: {:?}", err, path),
-            ErrorKind::Tera {ref err, ref path } => write!(f, "{}: {:?}", err, path),
+            ErrorKind::Tera {ref err, ref path } => {
+                if let Some(p) = path {
+                    write!(f, "{}: {:?}", err, p)
+                } else {
+                    write!(f, "{}: rendering a one-off template", err)
+                }
+            },
             ErrorKind::Git => write!(f, "Could not clone the repository"),
             ErrorKind::MissingTemplateDefinition => write!(f, "the template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),

@@ -2,9 +2,17 @@ use toml::Value;
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct Condition {
+pub struct VariableCondition {
     pub name: String,
     pub value: Value,
+}
+
+/// A list of items to be deleted when `name` has `value`
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Cleanup {
+    pub name: String,
+    pub value: Value,
+    pub paths: Vec<String>,
 }
 
 /// A question loaded from TOML
@@ -21,7 +29,7 @@ pub struct Variable {
     /// A regex pattern to validate the input
     pub validation: Option<String>,
     /// Only ask this variable is the condition is true
-    pub only_if: Option<Condition>,
+    pub only_if: Option<VariableCondition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -45,6 +53,9 @@ pub struct TemplateDefinition {
     /// Do not copy those directories/files
     #[serde(default)]
     pub ignore: Vec<String>,
+    /// Conditionally delete some files/dirs based on generator values
+    #[serde(default)]
+    pub cleanup: Vec<Cleanup>,
     /// Do not pass those files through Tera
     /// http://cookiecutter.readthedocs.io/en/latest/advanced/copy_without_render.html
     #[serde(default)]

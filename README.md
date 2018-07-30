@@ -21,6 +21,7 @@ $ cargo install kickstart
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/)
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
+- Has conditional cleanup to not let irrelevant files in the projects
 
 ## Try it out
 
@@ -66,6 +67,14 @@ ignore = [
 # Use it for files that contain syntax similar to Tera for example
 copy_without_render = [
     "*.html",
+]
+
+# Optional, a list of cleanup actions to do.
+# All paths listed will be deleted if the `name` has the value `value` after
+# the questions have been answered and the project generated.
+cleanup = [
+    { name = "spa", value = true, paths = ["{{ project_name | slugify }}/templates/"]},
+    { name = "auth_method", value = "none", paths = ["{{ project_name | slugify }}/docs/auth.md"]},
 ]
 
 # A list of variables, the schema is explained in detail below
@@ -156,3 +165,4 @@ None for now.
 - Add optional `validation` field to validate a string against a regex
 - Add colours and boldness to CLI
 - Use `git` command rather than
+- Add `cleanup` field to template definition for post-generation cleanup
