@@ -6,7 +6,6 @@ extern crate toml;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
-extern crate git2;
 extern crate memchr;
 extern crate glob;
 extern crate regex;

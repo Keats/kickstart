@@ -155,3 +155,4 @@ None for now.
 
 - Add optional `validation` field to validate a string against a regex
 - Add colours and boldness to CLI
+- Use `git` command rather than

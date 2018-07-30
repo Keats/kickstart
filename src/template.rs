@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::fs::{self, File};
 use std::str;
+use std::process::Command;
 
 use toml::{self, Value};
 use tera::{Tera, Context};
 use walkdir::WalkDir;
-use git2::Repository;
 use glob::Pattern;
 
 use errors::{Result, ErrorKind, new_error};
@@ -41,10 +41,14 @@ impl Template {
         }
         println!("Cloning the repository in your temporary folder...");
 
-        match Repository::clone(remote, &tmp) {
-            Ok(_) => (),
-            Err(e) => return Err(new_error(ErrorKind::Git(e))),
-        };
+        // Use git command rather than git2 as it seems there are some issues building it
+        // on some platforms:
+        // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
+        Command::new("git")
+            .current_dir(&tmp)
+            .args(&["clone", remote, &format!("{}", tmp.display())])
+            .output()
+            .map_err(|_| new_error(ErrorKind::Git))?;
 
         Ok(Template::from_local(&tmp))
     }
