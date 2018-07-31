@@ -38,7 +38,11 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
 
 /// Ask a question to the user where they can write any string
 pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> Result<String> {
-    print::bold(&format!("- {} ({}): ", prompt, default));
+    if let Some(ref pattern) = validation {
+        print::bold(&format!("- {} [must match {}] ({}): ", prompt, pattern, default));
+    } else {
+        print::bold(&format!("- {} ({}): ", prompt, default));
+    }
     let _ = io::stdout().flush();
     let input = read_line()?;
 

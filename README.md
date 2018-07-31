@@ -160,6 +160,10 @@ None for now.
 
 ## Changelog
 
+### 0.1.3 (2018-07-31)
+
+- Add pattern to match in the question when there is on
+
 ### 0.1.2 (2018-07-31)
 
 - Add optional `validation` field to validate a string against a regex
