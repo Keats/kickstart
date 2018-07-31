@@ -160,7 +160,7 @@ None for now.
 
 ## Changelog
 
-### 0.1.1 (2018-07-31)
+### 0.1.2 (2018-07-31)
 
 - Add optional `validation` field to validate a string against a regex
 - Add colours and boldness to CLI
