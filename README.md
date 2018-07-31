@@ -21,7 +21,7 @@ $ cargo install kickstart
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/)
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
-- Has conditional cleanup to not let irrelevant files in the projects
+- Has conditional cleanup to not let irrelevant files in the projects after generation
 
 ## Try it out
 
@@ -160,9 +160,10 @@ None for now.
 
 ## Changelog
 
-### 0.1.1 (unreleased)
+### 0.1.1 (2018-07-31)
 
 - Add optional `validation` field to validate a string against a regex
 - Add colours and boldness to CLI
-- Use `git` command rather than
+- Use `git` command rather than git2 crate to avoid some build issues
 - Add `cleanup` field to template definition for post-generation cleanup
+- Add `validate` command to diagnose errors in a `template.toml` file
