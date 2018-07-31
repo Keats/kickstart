@@ -160,6 +160,11 @@ And two more optional fields:
 
 ## Changelog
 
+
+### 0.1.5 (2018-07-31)
+
+- Fix git clone command
+
 ### 0.1.4 (2018-07-31)
 
 - Fix missing error display impl
