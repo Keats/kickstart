@@ -32,9 +32,9 @@ fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
     match e.kind() {
         ErrorKind::Tera {ref err, ..} => {
-            print::error(&format!("{}", e));
+            print::error(&format!("{}\n", e));
             for e in err.iter().skip(1) {
-                print::error(&format!("{}", e));
+                print::error(&format!("{}\n", e));
             }
         },
         _ => print::error(&format!("{}", e))
