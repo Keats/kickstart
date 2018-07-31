@@ -78,7 +78,7 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
 /// Takes a path to a `template.toml` file and validates it
 pub fn validate_file<T: AsRef<Path>>(path: T) -> Result<Vec<String>> {
     let definition: TemplateDefinition = toml::from_str(&read_file(path.as_ref())?)
-        .map_err(|_| new_error(ErrorKind::InvalidTemplate))?;
+        .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
     Ok(validate_definition(&definition))
 }

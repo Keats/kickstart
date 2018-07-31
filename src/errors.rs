@@ -5,13 +5,14 @@ use std::io;
 use std::result;
 
 use tera;
+use toml;
 
 /// A crate private constructor for `Error`.
 pub(crate) fn new_error(kind: ErrorKind) -> Error {
     Error(Box::new(kind))
 }
 
-/// A type alias for `Result<T, jsonwebtoken::Error>`.
+/// A type alias for `Result<T, kickstart::Error>`.
 pub type Result<T> = result::Result<T, Error>;
 
 /// An error that can occur when encoding/decoding JWTs
@@ -39,6 +40,7 @@ pub enum ErrorKind {
 
     Io { err: io::Error, path: PathBuf },
     Tera { err: tera::Error, path: Option<PathBuf> },
+    Toml { err: toml::de::Error },
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -63,6 +65,7 @@ impl StdError for Error {
             ErrorKind::MissingTemplateDefinition => "missing template.toml",
             ErrorKind::UnreadableStdin => "couldn't read from stdin",
             ErrorKind::Git => "git error",
+            ErrorKind::Toml {ref err} => err.description(),
             _ => unreachable!(),
         }
     }
@@ -71,6 +74,7 @@ impl StdError for Error {
         match *self.0 {
             ErrorKind::Io {ref err, .. } => Some(err),
             ErrorKind::Tera {ref err, .. } => Some(err),
+            ErrorKind::Toml {ref err} => Some(err),
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
@@ -92,8 +96,10 @@ impl fmt::Display for Error {
                 }
             },
             ErrorKind::Git => write!(f, "Could not clone the repository"),
-            ErrorKind::MissingTemplateDefinition => write!(f, "the template.toml is missing"),
+            ErrorKind::Toml {ref err} => write!(f, "Invalid TOML: {}", err),
+            ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
+            ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),
             _ => unreachable!(),
         }
     }

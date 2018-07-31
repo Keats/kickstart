@@ -156,9 +156,15 @@ And two more optional fields:
 
 ## List of templates
 
-None for now.
+- [Rust CLI application](https://github.com/Keats/rust-cli-template)
 
 ## Changelog
+
+### 0.1.4 (2018-07-31)
+
+- Fix missing error display impl
+- Fix TOML error not showing up
+- Fix multi-layered questions being asked when they shouldn't
 
 ### 0.1.3 (2018-07-31)
 

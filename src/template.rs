@@ -71,6 +71,9 @@ impl Template {
                     if *val != cond.value {
                         continue;
                     }
+                } else {
+                    // Not having it means we didn't even ask the question
+                    continue;
                 }
             }
 
@@ -111,7 +114,7 @@ impl Template {
         }
 
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
-            .map_err(|_| new_error(ErrorKind::InvalidTemplate))?;
+            .map_err(|err| new_error(ErrorKind::Toml {err}))?;
 
         let variables = self.ask_questions(&definition)?;
         let mut context = Context::new();

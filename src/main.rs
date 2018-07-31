@@ -37,7 +37,7 @@ fn bail(e: Error) -> ! {
                 print::error(&format!("{}\n", e));
             }
         },
-        _ => print::error(&format!("{}", e))
+        _ => print::error(&format!("{}\n", e))
     };
     ::std::process::exit(1);
 }
