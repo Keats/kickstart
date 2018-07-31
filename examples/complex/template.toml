@@ -10,11 +10,16 @@ ignore = [
 copy_without_render = [
     "*.html",
 ]
+cleanup = [
+    { name = "spa", value = true, paths = ["{{ project_name | slugify }}/templates/"]},
+    { name = "auth_method", value = "none", paths = ["{{ project_name | slugify }}/docs/auth.md"]},
+]
 
 [[variables]]
 name = "project_name"
-default = "My Project"
+default = "some-project"
 prompt = "What is the name of this project?"
+validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
 [[variables]]
 name = "database"

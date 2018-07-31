@@ -4,7 +4,6 @@ use std::fmt;
 use std::io;
 use std::result;
 
-use git2;
 use tera;
 
 /// A crate private constructor for `Error`.
@@ -36,10 +35,10 @@ pub enum ErrorKind {
     MissingTemplateDefinition,
     InvalidTemplate,
     UnreadableStdin,
+    Git,
 
     Io { err: io::Error, path: PathBuf },
-    Tera { err: tera::Error, path: PathBuf },
-    Git(git2::Error),
+    Tera { err: tera::Error, path: Option<PathBuf> },
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -60,10 +59,10 @@ impl StdError for Error {
         match *self.0 {
             ErrorKind::Io {ref err, ..} => err.description(),
             ErrorKind::Tera {ref err, ..} => err.description(),
-            ErrorKind::Git(ref err) => err.description(),
             ErrorKind::InvalidTemplate => "invalid template",
             ErrorKind::MissingTemplateDefinition => "missing template.toml",
-            ErrorKind::UnreadableStdin => "missing template.toml",
+            ErrorKind::UnreadableStdin => "couldn't read from stdin",
+            ErrorKind::Git => "git error",
             _ => unreachable!(),
         }
     }
@@ -72,10 +71,10 @@ impl StdError for Error {
         match *self.0 {
             ErrorKind::Io {ref err, .. } => Some(err),
             ErrorKind::Tera {ref err, .. } => Some(err),
-            ErrorKind::Git(ref err) => Some(err),
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
+            ErrorKind::Git => None,
             _ => unreachable!(),
         }
     }
@@ -85,9 +84,14 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
             ErrorKind::Io {ref err, ref path } => write!(f, "{}: {:?}", err, path),
-            ErrorKind::Tera {ref err, ref path } => write!(f, "{}: {:?}", err, path),
-            ErrorKind::Git(ref err) => err.fmt(f),
-            ErrorKind::InvalidTemplate => write!(f, "The template is invalid"),
+            ErrorKind::Tera {ref err, ref path } => {
+                if let Some(p) = path {
+                    write!(f, "{}: {:?}", err, p)
+                } else {
+                    write!(f, "{}: rendering a one-off template", err)
+                }
+            },
+            ErrorKind::Git => write!(f, "Could not clone the repository"),
             ErrorKind::MissingTemplateDefinition => write!(f, "the template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
             _ => unreachable!(),

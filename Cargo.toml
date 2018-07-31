@@ -1,6 +1,6 @@
 [package]
 name = "kickstart"
-version = "0.1.0"
+version = "0.1.1"
 description = "A simple way to get started with a project"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
@@ -14,7 +14,8 @@ tera = "0.11"
 walkdir = "2"
 serde_derive = "1"
 serde = "1"
-git2 = "0.7"
 toml = "0.4"
 memchr = "2"
 glob = "0.2"
+regex = "1"
+term = "0.5"

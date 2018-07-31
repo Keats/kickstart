@@ -1,7 +1,7 @@
 # kickstart
 
 A CLI tool to easily get a new project up and running by using pre-made templates.
-This is a more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
+This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
 ## Installation
 
@@ -17,10 +17,11 @@ $ cargo install kickstart
 - Single binary: no need to install a virtualenv or anything else
 - Templaces can be made for any kind of projects, not limited to Rust
 - Simple CLI usage: only one command
-- Directory names and filenames can be templated: `{{ repo_name }}/{{author.md}}` is a valid path
+- Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/)
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
+- Has conditional cleanup to not let irrelevant files in the projects
 
 ## Try it out
 
@@ -68,11 +69,20 @@ copy_without_render = [
     "*.html",
 ]
 
+# Optional, a list of cleanup actions to do.
+# All paths listed will be deleted if the `name` has the value `value` after
+# the questions have been answered and the project generated.
+cleanup = [
+    { name = "spa", value = true, paths = ["{{ project_name | slugify }}/templates/"]},
+    { name = "auth_method", value = "none", paths = ["{{ project_name | slugify }}/docs/auth.md"]},
+]
+
 # A list of variables, the schema is explained in detail below
 [[variables]]
 name = "project_name"
-default = "My Project"
+default = "my-project"
 prompt = "What is the name of this project?"
+validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
 [[variables]]
 name = "database"
@@ -142,7 +152,17 @@ And two more optional fields:
 
 - `choices`: a list of potential values, `kickstart` will make the user pick one
 - `only_if`: this question will only be asked if the variable `name` has the value `value`
+- `validation`: a Regex pattern to check when getting a string value
 
 ## List of templates
 
 None for now.
+
+## Changelog
+
+### 0.1.1 (unreleased)
+
+- Add optional `validation` field to validate a string against a regex
+- Add colours and boldness to CLI
+- Use `git` command rather than
+- Add `cleanup` field to template definition for post-generation cleanup

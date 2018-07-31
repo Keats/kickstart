@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::fs::{self, File};
 use std::str;
+use std::process::Command;
 
 use toml::{self, Value};
 use tera::{Tera, Context};
 use walkdir::WalkDir;
-use git2::Repository;
 use glob::Pattern;
 
 use errors::{Result, ErrorKind, new_error};
@@ -41,10 +41,14 @@ impl Template {
         }
         println!("Cloning the repository in your temporary folder...");
 
-        match Repository::clone(remote, &tmp) {
-            Ok(_) => (),
-            Err(e) => return Err(new_error(ErrorKind::Git(e))),
-        };
+        // Use git command rather than git2 as it seems there are some issues building it
+        // on some platforms:
+        // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
+        Command::new("git")
+            .current_dir(&tmp)
+            .args(&["clone", remote, &format!("{}", tmp.display())])
+            .output()
+            .map_err(|_| new_error(ErrorKind::Git))?;
 
         Ok(Template::from_local(&tmp))
     }
@@ -55,8 +59,7 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, def: &TemplateDefinition) -> Result<Context> {
-        let mut context = Context::new();
+    fn ask_questions(&self, def: &TemplateDefinition) -> Result<HashMap<String, Value>> {
         // Tera context doesn't expose a way to get value from a context
         // so we store them in another hashmap
         let mut vals = HashMap::new();
@@ -73,7 +76,6 @@ impl Template {
 
             if let Some(ref choices) = var.choices {
                 let res = ask_choices(&var.prompt, &var.default, choices)?;
-                context.add(&var.name, &res);
                 vals.insert(var.name.clone(), res);
                 continue;
             }
@@ -81,19 +83,16 @@ impl Template {
             match &var.default {
                 Value::Boolean(b) => {
                     let res = ask_bool(&var.prompt, *b)?;
-                    context.add(&var.name, &res);
                     vals.insert(var.name.clone(), Value::Boolean(res));
                     continue;
                 },
                 Value::String(s) => {
-                    let res = ask_string(&var.prompt, &s)?;
-                    context.add(&var.name, &res);
+                    let res = ask_string(&var.prompt, &s, &var.validation)?;
                     vals.insert(var.name.clone(), Value::String(res));
                     continue;
                 },
                 Value::Integer(i) => {
                     let res = ask_integer(&var.prompt, *i)?;
-                    context.add(&var.name, &res);
                     vals.insert(var.name.clone(), Value::Integer(res));
                     continue;
                 },
@@ -101,7 +100,7 @@ impl Template {
             }
         }
 
-        Ok(context)
+        Ok(vals)
     }
 
     pub fn generate(&self, output_dir: &PathBuf) -> Result<()> {
@@ -114,13 +113,17 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|_| new_error(ErrorKind::InvalidTemplate))?;
 
-        let context = self.ask_questions(&definition)?;
+        let variables = self.ask_questions(&definition)?;
+        let mut context = Context::new();
+        for (key, val) in &variables {
+            context.insert(key, val);
+        }
 
         if !output_dir.exists() {
             create_directory(&output_dir)?;
         }
 
-        // Create the glob patterns first, only once
+        // Create the glob patterns of files to copy without rendering first, only once
         let patterns: Vec<Pattern> = definition.copy_without_render
             .iter()
             .map(|s| Pattern::new(s).unwrap())
@@ -147,7 +150,7 @@ impl Template {
             }
 
             let tpl = Tera::one_off(&path_str, &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera { err, path: path.to_path_buf() }))?;
+                .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
 
             let real_path = output_dir.join(Path::new(&tpl));
 
@@ -170,11 +173,31 @@ impl Template {
             }
 
             let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera {err, path: entry.path().to_path_buf()}))?;
+                .map_err(|err| new_error(ErrorKind::Tera {err, path: Some(entry.path().to_path_buf())}))?;
             write_file(&real_path, &contents)?;
         }
 
-        println!("Everything done, ready to go!");
+        for cleanup in &definition.cleanup {
+            if let Some(val) = variables.get(&cleanup.name) {
+                if *val == cleanup.value {
+                    for p in &cleanup.paths {
+                        let actual_path = Tera::one_off(&p, &context, false)
+                            .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
+                        let path_to_delete = output_dir.join(actual_path);
+                        if !path_to_delete.exists() {
+                            continue;
+                        }
+                        if path_to_delete.is_dir() {
+                            fs::remove_dir_all(&path_to_delete)
+                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                        } else {
+                            fs::remove_file(&path_to_delete)
+                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(())
     }
