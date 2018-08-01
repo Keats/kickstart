@@ -19,3 +19,6 @@ memchr = "2"
 glob = "0.2"
 regex = "1"
 term = "0.5"
+
+[dev-dependencies]
+tempfile = "3"

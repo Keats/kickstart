@@ -10,6 +10,8 @@ extern crate memchr;
 extern crate glob;
 extern crate regex;
 extern crate term;
+#[cfg(test)]
+extern crate tempfile;
 
 use std::env;
 use std::path::Path;
@@ -20,10 +22,10 @@ mod prompt;
 mod utils;
 mod print;
 mod validate;
-pub mod template;
+pub mod generation;
 pub mod errors;
 
-use template::Template;
+use generation::Template;
 use errors::{Error, ErrorKind};
 use validate::validate_file;
 
