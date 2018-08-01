@@ -3,6 +3,8 @@
 A CLI tool to easily get a new project up and running by using pre-made templates.
 This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
+![kickstart.gif](./kickstart.gif)
+
 ## Installation
 
 Currently, `kickstart` is available only through crates.io:
@@ -10,6 +12,8 @@ Currently, `kickstart` is available only through crates.io:
 ```bash
 $ cargo install kickstart
 ```
+
+Run `kickstart --help` for a full listing of the available commands and their flags/options.
 
 ## Features
 
@@ -35,7 +39,6 @@ $ kickstart https://github.com/Keats/kickstart-sample -o sample
 
 ## Creating your own template
 Creating a template is fairly simple: create files and then just add a `template.toml` in the root folder. Here is a description of all the fields available in it:
-
 
 ```toml
 # Required, name of the template

@@ -20,7 +20,7 @@ mod cli;
 mod definition;
 mod prompt;
 mod utils;
-mod print;
+mod terminal;
 mod validate;
 pub mod generation;
 pub mod errors;
@@ -34,12 +34,12 @@ fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
     match e.kind() {
         ErrorKind::Tera {ref err, ..} => {
-            print::error(&format!("{}\n", e));
+            terminal::error(&format!("{}\n", e));
             for e in err.iter().skip(1) {
-                print::error(&format!("{}\n", e));
+                terminal::error(&format!("{}\n", e));
             }
         },
-        _ => print::error(&format!("{}\n", e))
+        _ => terminal::error(&format!("{}\n", e))
     };
     ::std::process::exit(1);
 }
@@ -56,13 +56,13 @@ fn main() {
             };
 
             if !errs.is_empty() {
-                print::error("The template.toml is invalid:\n");
+                terminal::error("The template.toml is invalid:\n");
                 for err in errs {
-                    print::error(&format!("- {}\n", err));
+                    terminal::error(&format!("- {}\n", err));
                 }
                 ::std::process::exit(1);
             } else {
-                print::success("\nThe template.toml file is valid!\n");
+                terminal::success("\nThe template.toml file is valid!\n");
             }
         },
         _ => {
@@ -79,7 +79,7 @@ fn main() {
             };
 
             match template.generate(&output_dir, no_input) {
-                Ok(_) => print::success("\nEverything done, ready to go!\n"),
+                Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
                 Err(e) => bail(e),
             };
         }

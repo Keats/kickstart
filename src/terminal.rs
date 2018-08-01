@@ -75,10 +75,11 @@ pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &O
 }
 
 pub fn bool_question(prompt: &str, default: bool) {
+    let default_str = if default { "[Y/n]" } else { "[y/N]" };
     if let Some(mut t) = term::stdout() {
         // check for colour/boldness at the beginning so we can unwrap later
         if !t.supports_color() || !t.supports_attr(term::Attr::Bold) {
-            write!(t, "{} {}: ", prompt, if default { "[Y/n]" } else { "[y/N" }).unwrap();
+            write!(t, "{} {}:  ", prompt, default_str).unwrap();
             return;
         }
 
@@ -86,9 +87,9 @@ pub fn bool_question(prompt: &str, default: bool) {
         write!(t, "{} ", prompt).unwrap();
         t.reset().unwrap();
         t.fg(term::color::YELLOW).unwrap();
-        if default {  write!(t, "[Y/n]").unwrap() } else { write!(t, "[y/N]").unwrap() }
+        if default {  write!(t, "[Y/n]: ").unwrap() } else { write!(t, "[y/N]: ").unwrap() }
         t.reset().unwrap();
     } else {
-        eprint!("{} [default: {}]: ", prompt, default);
+        eprint!("{} {}: ", prompt, default_str);
     }
 }
