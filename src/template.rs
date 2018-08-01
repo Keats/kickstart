@@ -33,7 +33,7 @@ impl Template {
     pub fn from_git(remote: &str) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        tmp.push(remote.split("/").last().unwrap_or_else(|| "kickstart"));
+        tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }

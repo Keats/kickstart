@@ -87,7 +87,7 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
 }
 
 /// Ask users to make a choice between various options
-pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::Array) -> Result<toml::Value> {
+pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &[toml::Value]) -> Result<toml::Value> {
     print::bold(&format!("- {}: ", prompt));
     let mut lines = vec![];
     let mut default_index = 1;
@@ -114,7 +114,7 @@ pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::A
                     print::error(&format!("Invalid choice: '{}'\n", input));
                     ask_choices(prompt, default, choices)?
                 } else {
-                    choices.get(num - 1).unwrap().clone()
+                    choices[num - 1].clone()
                 }
             } else {
                 print::error(&format!("Invalid choice: '{}'\n", input));

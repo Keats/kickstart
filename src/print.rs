@@ -1,4 +1,3 @@
-use std::io;
 use std::io::prelude::*;
 
 use term;
@@ -13,7 +12,7 @@ pub fn error(message: &str) {
             Err(_) => writeln!(t, "{}", message).unwrap()
         };
     } else {
-        write!(io::stderr(), "{}", message).unwrap();
+        eprint!("{}", message);
     }
 }
 
@@ -28,7 +27,7 @@ pub fn success(message: &str) {
             Err(_) => writeln!(t, "{}", message).unwrap()
         };
     } else {
-        write!(io::stderr(), "{}", message).unwrap();
+        eprint!("{}", message);
     }
 }
 
@@ -42,6 +41,6 @@ pub fn bold(message: &str) {
             Err(_) => write!(t, "{}", message).unwrap()
         };
     } else {
-        write!(io::stderr(), "{}", message).unwrap();
+        eprint!("{}", message);
     }
 }
