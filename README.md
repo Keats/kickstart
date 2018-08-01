@@ -160,6 +160,10 @@ And two more optional fields:
 
 ## Changelog
 
+### 0.1.6 (unreleased)
+
+- Add a `--no-input` flag to the main command to generate a template from defaults
+- Validate that a template only uses allowed TOML types (String, integer and boolean)
 
 ### 0.1.5 (2018-07-31)
 

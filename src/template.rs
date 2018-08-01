@@ -1,18 +1,16 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
 use std::io::Read;
 use std::fs::{self, File};
 use std::str;
 use std::process::Command;
 
-use toml::{self, Value};
+use toml;
 use tera::{Tera, Context};
 use walkdir::WalkDir;
 use glob::Pattern;
 
 use errors::{Result, ErrorKind, new_error};
-use prompt::{ask_string, ask_bool, ask_choices, ask_integer};
 use utils::{Source, get_source, read_file, write_file, create_directory};
 use utils::{is_vcs, is_binary};
 use definition::TemplateDefinition;
@@ -59,54 +57,7 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, def: &TemplateDefinition) -> Result<HashMap<String, Value>> {
-        // Tera context doesn't expose a way to get value from a context
-        // so we store them in another hashmap
-        let mut vals = HashMap::new();
-
-        for var in &def.variables {
-            // Skip the question if the value is different from the condition
-            if let Some(ref cond) = var.only_if {
-                if let Some(val) = vals.get(&cond.name) {
-                    if *val != cond.value {
-                        continue;
-                    }
-                } else {
-                    // Not having it means we didn't even ask the question
-                    continue;
-                }
-            }
-
-            if let Some(ref choices) = var.choices {
-                let res = ask_choices(&var.prompt, &var.default, choices)?;
-                vals.insert(var.name.clone(), res);
-                continue;
-            }
-
-            match &var.default {
-                Value::Boolean(b) => {
-                    let res = ask_bool(&var.prompt, *b)?;
-                    vals.insert(var.name.clone(), Value::Boolean(res));
-                    continue;
-                },
-                Value::String(s) => {
-                    let res = ask_string(&var.prompt, &s, &var.validation)?;
-                    vals.insert(var.name.clone(), Value::String(res));
-                    continue;
-                },
-                Value::Integer(i) => {
-                    let res = ask_integer(&var.prompt, *i)?;
-                    vals.insert(var.name.clone(), Value::Integer(res));
-                    continue;
-                },
-                _ => panic!("Unsupported TOML type in a question: {:?}", var.default)
-            }
-        }
-
-        Ok(vals)
-    }
-
-    pub fn generate(&self, output_dir: &PathBuf) -> Result<()> {
+    pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -116,7 +67,7 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|err| new_error(ErrorKind::Toml {err}))?;
 
-        let variables = self.ask_questions(&definition)?;
+        let variables = definition.ask_questions(no_input)?;
         let mut context = Context::new();
         for (key, val) in &variables {
             context.insert(key, val);

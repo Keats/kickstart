@@ -62,7 +62,6 @@ fn main() {
             } else {
                 print::success("\nThe template.toml file is valid!\n");
             }
-
         },
         _ => {
             // The actual generation call
@@ -70,13 +69,14 @@ fn main() {
             let output_dir = matches.value_of("output-dir")
                 .map(|p| Path::new(p).to_path_buf())
                 .unwrap_or_else(|| env::current_dir().unwrap());
+            let no_input = matches.is_present("no-input");
 
             let template = match Template::from_input(template_path) {
                 Ok(t) => t,
                 Err(e) => bail(e),
             };
 
-            match template.generate(&output_dir) {
+            match template.generate(&output_dir, no_input) {
                 Ok(_) => print::success("\nEverything done, ready to go!\n"),
                 Err(e) => bail(e),
             };
