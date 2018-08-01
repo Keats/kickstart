@@ -173,4 +173,78 @@ mod tests {
         let res = tpl.ask_questions(true);
         assert!(res.is_ok());
     }
+
+    #[test]
+    fn only_if_questions_are_skipped_if_cond_invalid() {
+        let tpl: TemplateDefinition = toml::from_str(r#"
+            name = "Test template"
+            description = "A description"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "project_name"
+            default = "My project"
+            prompt = "What's the name of your project?"
+
+            [[variables]]
+            name = "database"
+            default = "postgres"
+            prompt = "Which database to use?"
+            choices = ["postgres", "mysql"]
+
+            [[variables]]
+            name = "pg_version"
+            prompt = "Which version of Postgres?"
+            default = "10.4"
+            choices = ["10.4", "9.3"]
+            only_if = { name = "database", value = "mysql" }
+
+        "#).unwrap();
+
+        assert_eq!(tpl.variables.len(), 3);
+        let res = tpl.ask_questions(true);
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        assert!(!res.contains_key("pg_version"));
+    }
+
+    #[test]
+    fn nested_only_if_questions_are_skipped_if_initial_cond_invalid() {
+        let tpl: TemplateDefinition = toml::from_str(r#"
+            name = "Test template"
+            description = "A description"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "project_name"
+            default = "My project"
+            prompt = "What's the name of your project?"
+
+            [[variables]]
+            name = "database"
+            default = "postgres"
+            prompt = "Which database to use?"
+            choices = ["postgres", "mysql"]
+
+            [[variables]]
+            name = "pg_version"
+            prompt = "Which version of Postgres?"
+            default = "10.4"
+            choices = ["10.4", "9.3"]
+            only_if = { name = "database", value = "mysql" }
+
+            [[variables]]
+            name = "pg_bouncer"
+            prompt = "Add pgBouncer?"
+            default = true
+            only_if = { name = "pg_version", value = "10.4" }
+        "#).unwrap();
+
+        assert_eq!(tpl.variables.len(), 4);
+        let res = tpl.ask_questions(true);
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        assert!(!res.contains_key("pg_version"));
+        assert!(!res.contains_key("pg_bouncer"));
+    }
 }
