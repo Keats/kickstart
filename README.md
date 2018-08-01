@@ -3,6 +3,10 @@
 A CLI tool to easily get a new project up and running by using pre-made templates.
 This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
+[![Linux build status](https://travis-ci.org/Keats/kickstart.svg?branch=master)](https://travis-ci.org/Keats/kickstart)
+[![Windows build status](https://ci.appveyor.com/api/projects/status/github/Keats/kickstart?svg=true)](https://ci.appveyor.com/project/Keats/kickstart)
+[![Crates.io](https://img.shields.io/crates/v/kickstart.svg)](https://crates.io/crates/kickstart)
+
 ![kickstart.gif](./kickstart.gif)
 
 ## Installation
