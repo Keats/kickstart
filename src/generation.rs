@@ -43,7 +43,6 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .current_dir(&env::temp_dir())
             .args(&["clone", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;

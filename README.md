@@ -80,8 +80,8 @@ copy_without_render = [
 # All paths listed will be deleted if the `name` has the value `value` after
 # the questions have been answered and the project generated.
 cleanup = [
-    { name = "spa", value = true, paths = ["{{ project_name | slugify }}/templates/"]},
-    { name = "auth_method", value = "none", paths = ["{{ project_name | slugify }}/docs/auth.md"]},
+    { name = "spa", value = true, paths = ["{{ project_name }}/templates/"]},
+    { name = "auth_method", value = "none", paths = ["{{ project_name }}/docs/auth.md"]},
 ]
 
 # A list of variables, the schema is explained in detail below
