@@ -159,7 +159,27 @@ impl Template {
 
 #[cfg(test)]
 mod tests {
+    use tempfile::tempdir;
+
     use super::*;
 
+    #[test]
+    fn can_generate_from_local_path() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("examples/complex").unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
 
+    #[test]
+    fn can_generate_from_remote_repo() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("https://github.com/Keats/rust-cli-template").unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("My-CLI").join("template.toml").exists());
+        assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
+    }
 }
