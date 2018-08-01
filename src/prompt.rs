@@ -30,7 +30,7 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
         _ => {
             terminal::error(&format!("Invalid choice: '{}'\n", input));
             ask_bool(prompt, default)?
-        },
+        }
     };
 
     Ok(res)
@@ -56,7 +56,7 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
             } else {
                 input
             }
-        },
+        }
     };
 
     Ok(res)
@@ -116,7 +116,7 @@ pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &[toml::Value])
                 terminal::error(&format!("Invalid choice: '{}'\n", input));
                 ask_choices(prompt, default, choices)?
             }
-        },
+        }
     };
 
     Ok(res)

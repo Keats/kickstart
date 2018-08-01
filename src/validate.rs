@@ -72,7 +72,7 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
                             format!("Variable `{}` has a default that doesn't pass its validation regex", var.name)
                         );
                     }
-                },
+                }
                 Err(_) => {
                     errs.push(
                         format!("Variable `{}` has an invalid validation regex: {}", var.name, pattern)

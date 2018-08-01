@@ -33,12 +33,12 @@ use validate::validate_file;
 fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
     match e.kind() {
-        ErrorKind::Tera {ref err, ..} => {
+        ErrorKind::Tera { ref err, .. } => {
             terminal::error(&format!("{}\n", e));
             for e in err.iter().skip(1) {
                 terminal::error(&format!("{}\n", e));
             }
-        },
+        }
         _ => terminal::error(&format!("{}\n", e))
     };
     ::std::process::exit(1);
@@ -52,7 +52,7 @@ fn main() {
         ("validate", Some(matches)) => {
             let errs = match validate_file(matches.value_of("path").unwrap()) {
                 Ok(e) => e,
-                Err(e) =>  bail(e),
+                Err(e) => bail(e),
             };
 
             if !errs.is_empty() {
@@ -64,7 +64,7 @@ fn main() {
             } else {
                 terminal::success("\nThe template.toml file is valid!\n");
             }
-        },
+        }
         _ => {
             // The actual generation call
             let template_path = matches.value_of("template").unwrap();
@@ -84,5 +84,4 @@ fn main() {
             };
         }
     }
-
 }

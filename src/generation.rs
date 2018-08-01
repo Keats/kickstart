@@ -46,7 +46,7 @@ impl Template {
             .current_dir(&env::temp_dir())
             .args(&["clone", remote, &format!("{}", tmp.display())])
             .output()
-            .map_err(|_| new_error(ErrorKind::Git))?;
+            .map_err(|err| new_error(ErrorKind::Git { err }))?;
 
         Ok(Template::from_local(&tmp))
     }
@@ -65,7 +65,7 @@ impl Template {
         }
 
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
-            .map_err(|err| new_error(ErrorKind::Toml {err}))?;
+            .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
         let variables = definition.ask_questions(no_input)?;
         let mut context = Context::new();
@@ -127,7 +127,7 @@ impl Template {
             }
 
             let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera {err, path: Some(entry.path().to_path_buf())}))?;
+                .map_err(|err| new_error(ErrorKind::Tera { err, path: Some(entry.path().to_path_buf()) }))?;
             write_file(&real_path, &contents)?;
         }
 
@@ -143,10 +143,10 @@ impl Template {
                         }
                         if path_to_delete.is_dir() {
                             fs::remove_dir_all(&path_to_delete)
-                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
                         } else {
                             fs::remove_file(&path_to_delete)
-                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
                         }
                     }
                 }

@@ -108,7 +108,7 @@ impl TemplateDefinition {
                     };
                     vals.insert(var.name.clone(), Value::Boolean(res));
                     continue;
-                },
+                }
                 Value::String(s) => {
                     let res = if no_input {
                         s.clone()
@@ -117,7 +117,7 @@ impl TemplateDefinition {
                     };
                     vals.insert(var.name.clone(), Value::String(res));
                     continue;
-                },
+                }
                 Value::Integer(i) => {
                     let res = if no_input {
                         *i
@@ -126,7 +126,7 @@ impl TemplateDefinition {
                     };
                     vals.insert(var.name.clone(), Value::Integer(res));
                     continue;
-                },
+                }
                 _ => return Err(new_error(ErrorKind::InvalidTemplate)),
             }
         }
