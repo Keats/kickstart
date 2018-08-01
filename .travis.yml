@@ -1,10 +1,55 @@
+dist: trusty
 language: rust
-rust:
-  - stable
-  - beta
-  - nightly
+services: docker
 
-sudo: false
+env:
+  global:
+    - CRATE_NAME=kickstart
+
+matrix:
+  include:
+    # Linux
+    - env: TARGET=x86_64-unknown-linux-gnu
+    # OSX
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
+
+before_install: set -e
+
+install:
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
+script:
+  - bash ci/script.sh
+
+after_script: set +e
+
+before_deploy:
+  - sh ci/before_deploy.sh
+
+deploy:
+  api_key:
+    # if you see REPLACE_ME here, fix it by following the README of the template
+    secure: X0M1TT06/MHfwaENl+u/K3twBU0BVTQimXfBkHzODWsWC84SGeJPMiovIkuBxq4P7Wk7sIr1d/IINlq0sK40IvI3Xwy95YtpTKcK52ffZjTmHSNExCy+OhW2JefNPOwPI89JWKsmHM1I8FuDRiENTyawVS8akcl1XnQhS3V3a1zEuwpULO+6UwDTauJDRdVenDY7tHxbwYH644djZpKcL3LsPLkv0r0XlWnyH+Lw65/ggUmw63KaZTN+hOYfznXGNjlsv2YSD8lCo7eGGg+WA1rsr1SDOxzMM60OOE2Y4lDo0lX9tPWAxMfltvuouxfZ8Y2II4oNEYQui+AqaZ6CfhjFrfZG5P6QdFcGcjiYhDC+s+R9m+tCtzCcKh+lahxcfwOEo1O9pAsg77XVy5gf9guM++9uhYc54Z7tUeyNyJQVaQHt0drmqqeQWfk8w2YBmTPiJ7mwAbhEU5gISWQBpc9eRM1PiOaWDOJHgyV1rZfOT6RxgKBu5DW4pSZ6Iar7Qc+u4ei80QRI2jVsnlPY8/5rl/z0fqSnOen/wyGQHNI18SwXiy0TbN8aMpwr9tllOBYtjrWoX4xCj8NJksl1EAYaE2Cwy768mSfO9FTMqGQpuG5S6M9BRsG5pOtZdKpxjyP8vJ1ahp8KDI9Mz8QJSfG6kOHXqCaed+MmJNxJYI0=
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  on:
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+  provider: releases
+  skip_cleanup: true
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
+branches:
+  only:
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+    - master
 
 notifications:
   email: false
