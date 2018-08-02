@@ -19,6 +19,11 @@ pub fn build_cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .help("Where to output the project: defaults to the current directory")
         )
+        .arg(
+            Arg::with_name("no-input")
+                .long("no-input")
+                .help("Do not prompt for parameters and only use the defaults from template.toml")
+        )
         .subcommands(vec![
             SubCommand::with_name("validate")
                 .about("Validates that a template.toml is valid")

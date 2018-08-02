@@ -10,6 +10,8 @@ extern crate memchr;
 extern crate glob;
 extern crate regex;
 extern crate term;
+#[cfg(test)]
+extern crate tempfile;
 
 use std::env;
 use std::path::Path;
@@ -18,12 +20,12 @@ mod cli;
 mod definition;
 mod prompt;
 mod utils;
-mod print;
+mod terminal;
 mod validate;
-pub mod template;
+pub mod generation;
 pub mod errors;
 
-use template::Template;
+use generation::Template;
 use errors::{Error, ErrorKind};
 use validate::validate_file;
 
@@ -31,13 +33,13 @@ use validate::validate_file;
 fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
     match e.kind() {
-        ErrorKind::Tera {ref err, ..} => {
-            print::error(&format!("{}\n", e));
+        ErrorKind::Tera { ref err, .. } => {
+            terminal::error(&format!("{}\n", e));
             for e in err.iter().skip(1) {
-                print::error(&format!("{}\n", e));
+                terminal::error(&format!("{}\n", e));
             }
-        },
-        _ => print::error(&format!("{}\n", e))
+        }
+        _ => terminal::error(&format!("{}\n", e))
     };
     ::std::process::exit(1);
 }
@@ -50,37 +52,36 @@ fn main() {
         ("validate", Some(matches)) => {
             let errs = match validate_file(matches.value_of("path").unwrap()) {
                 Ok(e) => e,
-                Err(e) =>  bail(e),
+                Err(e) => bail(e),
             };
 
             if !errs.is_empty() {
-                print::error("The template.toml is invalid:\n");
+                terminal::error("The template.toml is invalid:\n");
                 for err in errs {
-                    print::error(&format!("- {}\n", err));
+                    terminal::error(&format!("- {}\n", err));
                 }
                 ::std::process::exit(1);
             } else {
-                print::success("\nThe template.toml file is valid!\n");
+                terminal::success("\nThe template.toml file is valid!\n");
             }
-
-        },
+        }
         _ => {
             // The actual generation call
             let template_path = matches.value_of("template").unwrap();
             let output_dir = matches.value_of("output-dir")
                 .map(|p| Path::new(p).to_path_buf())
                 .unwrap_or_else(|| env::current_dir().unwrap());
+            let no_input = matches.is_present("no-input");
 
             let template = match Template::from_input(template_path) {
                 Ok(t) => t,
                 Err(e) => bail(e),
             };
 
-            match template.generate(&output_dir) {
-                Ok(_) => print::success("\nEverything done, ready to go!\n"),
+            match template.generate(&output_dir, no_input) {
+                Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
                 Err(e) => bail(e),
             };
         }
     }
-
 }

@@ -36,7 +36,7 @@ pub enum ErrorKind {
     MissingTemplateDefinition,
     InvalidTemplate,
     UnreadableStdin,
-    Git,
+    Git { err: io::Error },
 
     Io { err: io::Error, path: PathBuf },
     Tera { err: tera::Error, path: Option<PathBuf> },
@@ -52,33 +52,33 @@ pub enum ErrorKind {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
-        new_error(ErrorKind::Io {err, path: PathBuf::new()})
+        new_error(ErrorKind::Io { err, path: PathBuf::new() })
     }
 }
 
 impl StdError for Error {
     fn description(&self) -> &str {
         match *self.0 {
-            ErrorKind::Io {ref err, ..} => err.description(),
-            ErrorKind::Tera {ref err, ..} => err.description(),
+            ErrorKind::Io { ref err, .. } => err.description(),
+            ErrorKind::Tera { ref err, .. } => err.description(),
             ErrorKind::InvalidTemplate => "invalid template",
             ErrorKind::MissingTemplateDefinition => "missing template.toml",
             ErrorKind::UnreadableStdin => "couldn't read from stdin",
-            ErrorKind::Git => "git error",
-            ErrorKind::Toml {ref err} => err.description(),
+            ErrorKind::Git { ref err } => err.description(),
+            ErrorKind::Toml { ref err } => err.description(),
             _ => unreachable!(),
         }
     }
 
     fn cause(&self) -> Option<&StdError> {
         match *self.0 {
-            ErrorKind::Io {ref err, .. } => Some(err),
-            ErrorKind::Tera {ref err, .. } => Some(err),
-            ErrorKind::Toml {ref err} => Some(err),
+            ErrorKind::Io { ref err, .. } => Some(err),
+            ErrorKind::Tera { ref err, .. } => Some(err),
+            ErrorKind::Toml { ref err } => Some(err),
+            ErrorKind::Git { ref err } => Some(err),
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
-            ErrorKind::Git => None,
             _ => unreachable!(),
         }
     }
@@ -87,16 +87,16 @@ impl StdError for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self.0 {
-            ErrorKind::Io {ref err, ref path } => write!(f, "{}: {:?}", err, path),
-            ErrorKind::Tera {ref err, ref path } => {
+            ErrorKind::Io { ref err, ref path } => write!(f, "{}: {:?}", err, path),
+            ErrorKind::Tera { ref err, ref path } => {
                 if let Some(p) = path {
                     write!(f, "{}: {:?}", err, p)
                 } else {
                     write!(f, "{}: rendering a one-off template", err)
                 }
-            },
-            ErrorKind::Git => write!(f, "Could not clone the repository"),
-            ErrorKind::Toml {ref err} => write!(f, "Invalid TOML: {}", err),
+            }
+            ErrorKind::Git { ref err } => write!(f, "Could not clone the repository: {}", err),
+            ErrorKind::Toml { ref err } => write!(f, "Invalid TOML: {}", err),
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
             ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),

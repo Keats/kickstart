@@ -4,7 +4,7 @@ use regex::Regex;
 use toml;
 
 use errors::{Result, new_error, ErrorKind};
-use print;
+use terminal;
 
 /// Wait for user input and return what they typed
 fn read_line() -> Result<String> {
@@ -19,7 +19,7 @@ fn read_line() -> Result<String> {
 
 /// Ask a yes/no question to the user
 pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
-    print::bold(&format!("- {} {}: ", prompt, if default { "[Y/n]" } else { "[y/N]" }));
+    terminal::bool_question(prompt, default);
     let _ = io::stdout().flush();
     let input = read_line()?;
 
@@ -28,9 +28,9 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
         "n" | "N" | "no" | "NO" | "false" => false,
         "" => default,
         _ => {
-            print::error(&format!("Invalid choice: '{}'\n", input));
+            terminal::error(&format!("Invalid choice: '{}'\n", input));
             ask_bool(prompt, default)?
-        },
+        }
     };
 
     Ok(res)
@@ -38,11 +38,7 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
 
 /// Ask a question to the user where they can write any string
 pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> Result<String> {
-    if let Some(ref pattern) = validation {
-        print::bold(&format!("- {} [must match {}] ({}): ", prompt, pattern, default));
-    } else {
-        print::bold(&format!("- {} ({}): ", prompt, default));
-    }
+    terminal::basic_question(prompt, &default, validation);
     let _ = io::stdout().flush();
     let input = read_line()?;
 
@@ -54,13 +50,13 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
                 if re.is_match(&input) {
                     input
                 } else {
-                    print::error(&format!("The value needs to pass the regex: {}\n", pattern));
+                    terminal::error(&format!("The value needs to pass the regex: {}\n", pattern));
                     ask_string(prompt, default, validation)?
                 }
             } else {
                 input
             }
-        },
+        }
     };
 
     Ok(res)
@@ -68,7 +64,7 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
 
 /// Ask a question to the user where they can write an integer
 pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
-    print::bold(&format!("- {} ({}): ", prompt, default));
+    terminal::basic_question(prompt, &default, &None);
     let _ = io::stdout().flush();
     let input = read_line()?;
 
@@ -77,7 +73,7 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
         _ => match input.parse::<i64>() {
             Ok(i) => i,
             Err(_) => {
-                print::error(&format!("Invalid integer: '{}'\n", input));
+                terminal::error(&format!("Invalid integer: '{}'\n", input));
                 ask_integer(prompt, default)?
             }
         },
@@ -87,13 +83,13 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
 }
 
 /// Ask users to make a choice between various options
-pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::Array) -> Result<toml::Value> {
-    print::bold(&format!("- {}: ", prompt));
+pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &[toml::Value]) -> Result<toml::Value> {
+    terminal::bold(&format!("{}: \n", prompt));
     let mut lines = vec![];
     let mut default_index = 1;
 
     for (index, choice) in choices.iter().enumerate() {
-        print::bold(&format!("\n{}. {}", index + 1, choice.as_str().unwrap()));
+        terminal::bold(&format!("  {}. {}\n", index + 1, choice.as_str().unwrap()));
 
         lines.push(format!("{}", index + 1));
         if choice == default {
@@ -101,7 +97,7 @@ pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::A
         }
     }
 
-    print::bold(&format!("\n> Choose from {} ({}): ", lines.join(", "), default_index));
+    terminal::basic_question(&format!("  > Choose from {}..{}", 1, lines.len()), &default_index, &None);
 
     let _ = io::stdout().flush();
     let input = read_line()?;
@@ -111,16 +107,16 @@ pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &toml::value::A
         _ => {
             if let Ok(num) = input.parse::<usize>() {
                 if num > choices.len() {
-                    print::error(&format!("Invalid choice: '{}'\n", input));
+                    terminal::error(&format!("Invalid choice: '{}'\n", input));
                     ask_choices(prompt, default, choices)?
                 } else {
-                    choices.get(num - 1).unwrap().clone()
+                    choices[num - 1].clone()
                 }
             } else {
-                print::error(&format!("Invalid choice: '{}'\n", input));
+                terminal::error(&format!("Invalid choice: '{}'\n", input));
                 ask_choices(prompt, default, choices)?
             }
-        },
+        }
     };
 
     Ok(res)

@@ -1,18 +1,16 @@
 use std::env;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
 use std::io::Read;
 use std::fs::{self, File};
 use std::str;
 use std::process::Command;
 
-use toml::{self, Value};
+use toml;
 use tera::{Tera, Context};
 use walkdir::WalkDir;
 use glob::Pattern;
 
 use errors::{Result, ErrorKind, new_error};
-use prompt::{ask_string, ask_bool, ask_choices, ask_integer};
 use utils::{Source, get_source, read_file, write_file, create_directory};
 use utils::{is_vcs, is_binary};
 use definition::TemplateDefinition;
@@ -35,7 +33,7 @@ impl Template {
     pub fn from_git(remote: &str) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        tmp.push(remote.split("/").last().unwrap_or_else(|| "kickstart"));
+        tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }
@@ -45,10 +43,9 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .current_dir(&env::temp_dir())
             .args(&["clone", remote, &format!("{}", tmp.display())])
             .output()
-            .map_err(|_| new_error(ErrorKind::Git))?;
+            .map_err(|err| new_error(ErrorKind::Git { err }))?;
 
         Ok(Template::from_local(&tmp))
     }
@@ -59,54 +56,7 @@ impl Template {
         }
     }
 
-    fn ask_questions(&self, def: &TemplateDefinition) -> Result<HashMap<String, Value>> {
-        // Tera context doesn't expose a way to get value from a context
-        // so we store them in another hashmap
-        let mut vals = HashMap::new();
-
-        for var in &def.variables {
-            // Skip the question if the value is different from the condition
-            if let Some(ref cond) = var.only_if {
-                if let Some(val) = vals.get(&cond.name) {
-                    if *val != cond.value {
-                        continue;
-                    }
-                } else {
-                    // Not having it means we didn't even ask the question
-                    continue;
-                }
-            }
-
-            if let Some(ref choices) = var.choices {
-                let res = ask_choices(&var.prompt, &var.default, choices)?;
-                vals.insert(var.name.clone(), res);
-                continue;
-            }
-
-            match &var.default {
-                Value::Boolean(b) => {
-                    let res = ask_bool(&var.prompt, *b)?;
-                    vals.insert(var.name.clone(), Value::Boolean(res));
-                    continue;
-                },
-                Value::String(s) => {
-                    let res = ask_string(&var.prompt, &s, &var.validation)?;
-                    vals.insert(var.name.clone(), Value::String(res));
-                    continue;
-                },
-                Value::Integer(i) => {
-                    let res = ask_integer(&var.prompt, *i)?;
-                    vals.insert(var.name.clone(), Value::Integer(res));
-                    continue;
-                },
-                _ => panic!("Unsupported TOML type in a question: {:?}", var.default)
-            }
-        }
-
-        Ok(vals)
-    }
-
-    pub fn generate(&self, output_dir: &PathBuf) -> Result<()> {
+    pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -114,9 +64,9 @@ impl Template {
         }
 
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
-            .map_err(|err| new_error(ErrorKind::Toml {err}))?;
+            .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
-        let variables = self.ask_questions(&definition)?;
+        let variables = definition.ask_questions(no_input)?;
         let mut context = Context::new();
         for (key, val) in &variables {
             context.insert(key, val);
@@ -176,7 +126,7 @@ impl Template {
             }
 
             let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera {err, path: Some(entry.path().to_path_buf())}))?;
+                .map_err(|err| new_error(ErrorKind::Tera { err, path: Some(entry.path().to_path_buf()) }))?;
             write_file(&real_path, &contents)?;
         }
 
@@ -192,10 +142,10 @@ impl Template {
                         }
                         if path_to_delete.is_dir() {
                             fs::remove_dir_all(&path_to_delete)
-                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
                         } else {
                             fs::remove_file(&path_to_delete)
-                             .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
                         }
                     }
                 }
@@ -203,5 +153,32 @@ impl Template {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn can_generate_from_local_path() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("examples/complex").unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn can_generate_from_remote_repo() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("https://github.com/Keats/rust-cli-template").unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("My-CLI").join("template.toml").exists());
+        assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
     }
 }

@@ -3,6 +3,12 @@
 A CLI tool to easily get a new project up and running by using pre-made templates.
 This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
+[![Linux build status](https://travis-ci.org/Keats/kickstart.svg?branch=master)](https://travis-ci.org/Keats/kickstart)
+[![Windows build status](https://ci.appveyor.com/api/projects/status/github/Keats/kickstart?svg=true)](https://ci.appveyor.com/project/Keats/kickstart)
+[![Crates.io](https://img.shields.io/crates/v/kickstart.svg)](https://crates.io/crates/kickstart)
+
+![kickstart.gif](./kickstart.gif)
+
 ## Installation
 
 Currently, `kickstart` is available only through crates.io:
@@ -10,6 +16,8 @@ Currently, `kickstart` is available only through crates.io:
 ```bash
 $ cargo install kickstart
 ```
+
+Run `kickstart --help` for a full listing of the available commands and their flags/options.
 
 ## Features
 
@@ -35,7 +43,6 @@ $ kickstart https://github.com/Keats/kickstart-sample -o sample
 
 ## Creating your own template
 Creating a template is fairly simple: create files and then just add a `template.toml` in the root folder. Here is a description of all the fields available in it:
-
 
 ```toml
 # Required, name of the template
@@ -73,8 +80,8 @@ copy_without_render = [
 # All paths listed will be deleted if the `name` has the value `value` after
 # the questions have been answered and the project generated.
 cleanup = [
-    { name = "spa", value = true, paths = ["{{ project_name | slugify }}/templates/"]},
-    { name = "auth_method", value = "none", paths = ["{{ project_name | slugify }}/docs/auth.md"]},
+    { name = "spa", value = true, paths = ["{{ project_name }}/templates/"]},
+    { name = "auth_method", value = "none", paths = ["{{ project_name }}/docs/auth.md"]},
 ]
 
 # A list of variables, the schema is explained in detail below
@@ -160,6 +167,11 @@ And two more optional fields:
 
 ## Changelog
 
+### 0.1.6 (unreleased)
+
+- Add a `--no-input` flag to the main command to generate a template from defaults
+- Validate that a template only uses allowed TOML types (String, integer and boolean)
+- Better question UI
 
 ### 0.1.5 (2018-07-31)
 

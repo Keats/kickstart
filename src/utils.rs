@@ -17,14 +17,14 @@ pub enum Source {
 pub fn read_file(p: &Path) -> Result<String> {
     let mut f = match File::open(p) {
         Ok(f) => f,
-        Err(err) => return Err(new_error(ErrorKind::Io {err, path: p.to_path_buf()}))
+        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() }))
     };
 
 
     let mut contents = String::new();
     match f.read_to_string(&mut contents) {
         Ok(_) => (),
-        Err(err) => return Err(new_error(ErrorKind::Io {err, path: p.to_path_buf()}))
+        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() }))
     };
 
     Ok(contents)
@@ -56,9 +56,9 @@ pub fn get_source(input: &str) -> Source {
 
 pub fn is_vcs(entry: &DirEntry) -> bool {
     entry.file_name()
-         .to_str()
-         .map(|s| s.starts_with(".git"))
-         .unwrap_or(false)
+        .to_str()
+        .map(|s| s.starts_with(".git"))
+        .unwrap_or(false)
 }
 
 /// See https://twitter.com/20100Prouillet/status/1022973478096527360

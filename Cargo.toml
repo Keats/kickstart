@@ -1,6 +1,6 @@
 [package]
 name = "kickstart"
-version = "0.1.5"
+version = "0.1.6"
 description = "A simple way to get started with a project"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
@@ -19,3 +19,6 @@ memchr = "2"
 glob = "0.2"
 regex = "1"
 term = "0.5"
+
+[dev-dependencies]
+tempfile = "3"

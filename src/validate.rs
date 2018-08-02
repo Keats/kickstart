@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use regex::Regex;
-use toml;
+use toml::{self, Value};
 
 use errors::{Result, ErrorKind, new_error};
 use definition::TemplateDefinition;
@@ -15,7 +15,17 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
     let mut types = HashMap::new();
 
     for var in &def.variables {
-        types.insert(var.name.to_string(), var.default.type_str());
+        let type_str = var.default.type_str();
+        types.insert(var.name.to_string(), type_str);
+
+        match var.default {
+            Value::String(_) | Value::Integer(_) | Value::Boolean(_) => (),
+            _ => {
+                errs.push(
+                    format!("Variable `{}` has a default of type {}, which isn't allowed", var.name, type_str)
+                );
+            }
+        }
 
         if let Some(ref choices) = var.choices {
             let mut choice_found = false;
@@ -62,7 +72,7 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
                             format!("Variable `{}` has a default that doesn't pass its validation regex", var.name)
                         );
                     }
-                },
+                }
                 Err(_) => {
                     errs.push(
                         format!("Variable `{}` has an invalid validation regex: {}", var.name, pattern)
@@ -262,5 +272,24 @@ mod tests {
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
         assert_eq!(errs[0], "Variable `project_name` has a default that doesn\'t pass its validation regex");
+    }
+
+    #[test]
+    fn errors_on_unsupported_type() {
+        let def: TemplateDefinition = toml::from_str(r#"
+            name = "Test template"
+            description = "A description"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "project_name"
+            default = 1.2
+            prompt = "What's the name of your project?"
+            validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
+
+        "#).unwrap();
+        let errs = validate_definition(&def);
+        assert!(!errs.is_empty());
+        assert_eq!(errs[0], "Variable `project_name` has a default of type float, which isn\'t allowed");
     }
 }
