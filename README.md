@@ -11,11 +11,13 @@ This is a slightly more powerful version of an equivalent tool in Python, [cooki
 
 ## Installation
 
-Currently, `kickstart` is available only through crates.io:
+`kickstart` is available only through crates.io:
 
 ```bash
 $ cargo install kickstart
 ```
+
+Or as a pre-built binary [on the Releases page](https://github.com/Keats/kickstart/releases).
 
 Run `kickstart --help` for a full listing of the available commands and their flags/options.
 
@@ -23,13 +25,13 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 
 - Cross-platform: Windows, Mac and Linux supported
 - Single binary: no need to install a virtualenv or anything else
-- Templaces can be made for any kind of projects, not limited to Rust
-- Simple CLI usage: only one command
+- Simple to use
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
-- All templating done through [Tera](https://tera.netlify.com/docs/installation/)
+- All templating done through [Tera](https://tera.netlify.com/docs/installation/) - a template engine inspired by Jinja2
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
 - Has conditional cleanup to not let irrelevant files in the projects after generation
+- Templates can be made for any kind of projects, not limited to Rust
 
 ## Try it out
 
