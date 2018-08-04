@@ -31,7 +31,9 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - Choose your own adventure: supports conditional questions based on previous answers
 - Can load templates from a local directory or from a Git repository
 - Has conditional cleanup to not let irrelevant files in the projects after generation
-- Templates can be made for any kind of projects, not limited to Rust
+- Templates can be made for any kind of projects/languages
+
+The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
 
 ## Try it out
 
