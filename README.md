@@ -159,7 +159,7 @@ A variable has the following required fields:
 - `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported)
 - `prompt`: the text to display to the user
 
-And two more optional fields:
+And three more optional fields:
 
 - `choices`: a list of potential values, `kickstart` will make the user pick one
 - `only_if`: this question will only be asked if the variable `name` has the value `value`
