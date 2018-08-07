@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 
 use walkdir::DirEntry;
 use memchr::memchr;
-use regex::Regex;
 
 use errors::{Result, ErrorKind, new_error};
 
@@ -47,10 +46,9 @@ pub fn create_directory(path: &Path) -> Result<()> {
 
 /// Is it a remote or a local thing
 pub fn get_source(input: &str) -> Source {
-    // Should be a Regex once we add hg or other stuff
-    let git_shortcut_re = Regex::new(r"^\w+:").unwrap();
-
-    if input.starts_with("git@") || input.starts_with("http://") || input.starts_with("https://") || git_shortcut_re.is_match(input) {
+    // A local path shouldn't be able to contain a : and every Git URL format contains this character,
+    // so it's fairly safe to check if the asked input contains those chars.
+    if input.contains(":") {
         Source::Git(input.to_string())
     } else {
         Source::Local(Path::new(input).to_path_buf())
@@ -67,4 +65,54 @@ pub fn is_vcs(entry: &DirEntry) -> bool {
 /// See https://twitter.com/20100Prouillet/status/1022973478096527360
 pub fn is_binary(buf: &[u8]) -> bool {
     memchr(b'\x00', buf).is_some()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_detect_git_source() {
+        let ssh = "gitUser@git-server.local:git/Test";
+        let http = "https://git-server.local/git/Test";
+        let shortened = "git:git/Test";
+        let invalid = "test";
+
+        match get_source(ssh) {
+            Source::Git(ref _res) => {},
+            Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", ssh),
+        }
+        match get_source(http) {
+            Source::Git(ref _res) => {},
+            Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", http),
+        }
+        match get_source(shortened) {
+            Source::Git(ref _res) => {},
+            Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", shortened),
+        }
+        match get_source(invalid) {
+            Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", invalid),
+            Source::Local(ref _res) => {},
+        }
+    }
+
+    #[test]
+    fn can_detect_local_sources() {
+        let invalid = "git:git/Test";
+        let relative_valid = "test/abc/def";
+        let absolute_valid = "test/abc/def";
+
+        match get_source(relative_valid) {
+            Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", relative_valid),
+            Source::Local(ref _res) => {},
+        }
+        match get_source(absolute_valid) {
+            Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", absolute_valid),
+            Source::Local(ref _res) => {},
+        }
+        match get_source(invalid) {
+            Source::Git(ref _res) => {},
+            Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", invalid),
+        }
+    }
 }
