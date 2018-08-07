@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use walkdir::DirEntry;
 use memchr::memchr;
+use regex::Regex;
 
 use errors::{Result, ErrorKind, new_error};
 
@@ -47,7 +48,9 @@ pub fn create_directory(path: &Path) -> Result<()> {
 /// Is it a remote or a local thing
 pub fn get_source(input: &str) -> Source {
     // Should be a Regex once we add hg or other stuff
-    if input.starts_with("git@") || input.starts_with("http://") || input.starts_with("https://") {
+    let git_shortcut_re = Regex::new(r"^\w+:").unwrap();
+
+    if input.starts_with("git@") || input.starts_with("http://") || input.starts_with("https://") || git_shortcut_re.is_match(input) {
         Source::Git(input.to_string())
     } else {
         Source::Local(Path::new(input).to_path_buf())
