@@ -69,51 +69,35 @@ pub fn is_binary(buf: &[u8]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    // TODO tests, I don't really know how to test those here
-    // use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+    use super::*;
 
-    // #[test]
-    // fn can_detect_git_source() {
-    //     let ssh = "gitUser@git-server.local:git/Test";
-    //     let http = "https://git-server.local/git/Test";
-    //     let shortened = "git:git/Test";
-    //     let invalid = "test";
-
-    //     match get_source(ssh) {
-    //         Source::Git(ref _res) => {},
-    //         Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", ssh),
-    //     }
-    //     match get_source(http) {
-    //         Source::Git(ref _res) => {},
-    //         Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", http),
-    //     }
-    //     match get_source(shortened) {
-    //         Source::Git(ref _res) => {},
-    //         Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", shortened),
-    //     }
-    //     match get_source(invalid) {
-    //         Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", invalid),
-    //         Source::Local(ref _res) => {},
-    //     }
-    // }
-
-    // #[test]
-    // fn can_detect_local_sources() {
-    //     let invalid = "git:git/Test";
-    //     let relative_valid = "test/abc/def";
-    //     let absolute_valid = "test/abc/def";
-
-    //     match get_source(relative_valid) {
-    //         Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", relative_valid),
-    //         Source::Local(ref _res) => {},
-    //     }
-    //     match get_source(absolute_valid) {
-    //         Source::Git(ref _res) => panic!("Expected {} to be considered as Local, got Git", absolute_valid),
-    //         Source::Local(ref _res) => {},
-    //     }
-    //     match get_source(invalid) {
-    //         Source::Git(ref _res) => {},
-    //         Source::Local(ref _res) => panic!("Expected {} to be considered as Git, got Local", invalid),
-    //     }
-    // }
+    #[test]
+    fn can_detect_sources() {
+        let dir = tempdir().unwrap();
+        let folder1 = dir.path().join("working");
+        let folder2 = dir.path().join("also-working");
+        fs::create_dir(&folder1).unwrap();
+        fs::create_dir(&folder2).unwrap();
+        let mut inputs = vec![
+            // Local valid
+            (folder1.to_string_lossy().to_string(), Source::Local(folder1.to_path_buf())),
+            (folder2.to_string_lossy().to_string(), Source::Local(folder2.to_path_buf())),
+            // Git valid
+            ("https://git-server.local/git/Test".to_string(), Source::Git("https://git-server.local/git/Test".to_string())),
+            ("gitUser@git-server.local:git/Test".to_string(), Source::Git("gitUser@git-server.local:git/Test".to_string())),
+            ("git:git/Test".to_string(), Source::Git("git:git/Test".to_string())),
+            // Non existing local -> considered as a git and will fail later on
+            ("hello".to_string(), Source::Git("hello".to_string())),
+        ];
+        if !cfg!(windows) {
+            let folder3 = dir.path().join("not:git");
+            fs::create_dir(&folder3).unwrap();
+            inputs.push((folder3.to_string_lossy().to_string(), Source::Local(folder3.to_path_buf())));
+        }
+        for (input, expected) in inputs {
+            assert_eq!(get_source(&input), expected);
+        }
+    }
 }
