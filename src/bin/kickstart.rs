@@ -1,34 +1,51 @@
 #[macro_use]
 extern crate clap;
-extern crate tera;
-extern crate walkdir;
-extern crate toml;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate memchr;
-extern crate glob;
-extern crate regex;
-extern crate term;
-#[cfg(test)]
-extern crate tempfile;
+extern crate kickstart;
 
 use std::env;
 use std::path::Path;
 
-mod cli;
-mod definition;
-mod prompt;
-mod utils;
-mod terminal;
-mod validate;
-pub mod generation;
-pub mod errors;
+use clap::{App, Arg, SubCommand, AppSettings};
 
-use generation::Template;
-use errors::{Error, ErrorKind};
-use validate::validate_file;
+use kickstart::errors::{Error, ErrorKind};
+use kickstart::terminal;
+use kickstart::generation::Template;
+use kickstart::validate::validate_file;
 
+
+pub fn build_cli() -> App<'static, 'static> {
+    App::new("kickstart")
+        .version(crate_version!())
+        .author(crate_authors!())
+        .about(crate_description!())
+        .setting(AppSettings::SubcommandsNegateReqs)
+        .arg(
+            Arg::with_name("template")
+                .required(true)
+                .help("Template to use: a local path or a HTTP url pointing to a Git repository")
+        )
+        .arg(
+            Arg::with_name("output-dir")
+                .short("o")
+                .long("output-dir")
+                .takes_value(true)
+                .help("Where to output the project: defaults to the current directory")
+        )
+        .arg(
+            Arg::with_name("no-input")
+                .long("no-input")
+                .help("Do not prompt for parameters and only use the defaults from template.toml")
+        )
+        .subcommands(vec![
+            SubCommand::with_name("validate")
+                .about("Validates that a template.toml is valid")
+                .arg(
+                    Arg::with_name("path")
+                        .required(true)
+                        .help("The path to the template.toml")
+                ),
+        ])
+}
 
 fn bail(e: Error) -> ! {
     // Special handling for Tera error-chain
@@ -41,12 +58,13 @@ fn bail(e: Error) -> ! {
         }
         _ => terminal::error(&format!("{}\n", e))
     };
-    ::std::process::exit(1);
+
+    ::std::process::exit(1)
 }
 
 
 fn main() {
-    let matches = cli::build_cli().get_matches();
+    let matches = build_cli().get_matches();
 
     match matches.subcommand() {
         ("validate", Some(matches)) => {

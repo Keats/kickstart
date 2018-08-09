@@ -5,9 +5,6 @@ description = "A simple way to get started with a project"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
 
-[[bin]]
-name = "kickstart"
-
 [dependencies]
 clap = "2"
 tera = "0.11"

@@ -16,6 +16,7 @@ use utils::{is_vcs, is_binary};
 use definition::TemplateDefinition;
 
 
+/// The current template being generated
 #[derive(Debug, PartialEq)]
 pub struct Template {
     /// Local path to the template folder
@@ -23,6 +24,9 @@ pub struct Template {
 }
 
 impl Template {
+    /// Load a template from a string.
+    /// It will try to detect whether this is a local folder or whether
+    /// it should try to clone it.
     pub fn from_input(input: &str) -> Result<Template> {
         match get_source(input) {
             Source::Git(remote) => Template::from_git(&remote),
@@ -30,6 +34,8 @@ impl Template {
         }
     }
 
+    /// Load a template from git.
+    /// This will clone the repository if possible in the temporary directory of the user
     pub fn from_git(remote: &str) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
@@ -56,6 +62,7 @@ impl Template {
         }
     }
 
+    /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");

@@ -55,6 +55,7 @@ pub fn get_source(input: &str) -> Source {
     }
 }
 
+/// Is this entry from a VCS?
 pub fn is_vcs(entry: &DirEntry) -> bool {
     entry.file_name()
         .to_str()
@@ -62,6 +63,7 @@ pub fn is_vcs(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
+/// Is the buffer from a binary file?
 /// See https://twitter.com/20100Prouillet/status/1022973478096527360
 pub fn is_binary(buf: &[u8]) -> bool {
     memchr(b'\x00', buf).is_some()

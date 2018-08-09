@@ -38,6 +38,7 @@ pub struct Variable {
     pub only_if: Option<VariableCondition>,
 }
 
+/// The full template struct we get fom loading a TOML file
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct TemplateDefinition {
     /// Name of the template
@@ -71,6 +72,9 @@ pub struct TemplateDefinition {
 }
 
 impl TemplateDefinition {
+    /// Ask all the questions of that template and return the answers.
+    /// If `no_input` is `true`, it will automatically pick the default without
+    /// prompting the user
     pub fn ask_questions(&self, no_input: bool) -> Result<HashMap<String, Value>> {
         // Tera context doesn't expose a way to get value from a context
         // so we store them in another hashmap

@@ -3,7 +3,7 @@ use std::fmt;
 
 use term;
 
-
+/// Show an error message
 pub fn error(message: &str) {
     if let Some(mut t) = term::stderr() {
         match t.fg(term::color::BRIGHT_RED) {
@@ -18,7 +18,7 @@ pub fn error(message: &str) {
     }
 }
 
-
+/// Show a success message
 pub fn success(message: &str) {
     if let Some(mut t) = term::stdout() {
         match t.fg(term::color::BRIGHT_GREEN) {
@@ -33,6 +33,7 @@ pub fn success(message: &str) {
     }
 }
 
+/// Show a message in bold
 pub fn bold(message: &str) {
     if let Some(mut t) = term::stdout() {
         match t.attr(term::Attr::Bold) {
@@ -47,6 +48,7 @@ pub fn bold(message: &str) {
     }
 }
 
+/// Show a basic question with all necessary formatting applied
 pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &Option<String>) {
     if let Some(mut t) = term::stdout() {
         // check for colour/boldness at the beginning so we can unwrap later
@@ -74,6 +76,7 @@ pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &O
     }
 }
 
+/// Show a yes/no question with all necessary formatting applied
 pub fn bool_question(prompt: &str, default: bool) {
     let default_str = if default { "[Y/n]" } else { "[y/N]" };
     if let Some(mut t) = term::stdout() {

@@ -10,6 +10,7 @@ use utils::read_file;
 
 
 /// Validate that the struct doesn't have bad data in it
+/// and that it doesn't have obvious logic flaws
 pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
     let mut errs = vec![];
     let mut types = HashMap::new();

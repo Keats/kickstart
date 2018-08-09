@@ -15,7 +15,7 @@ pub(crate) fn new_error(kind: ErrorKind) -> Error {
 /// A type alias for `Result<T, kickstart::Error>`.
 pub type Result<T> = result::Result<T, Error>;
 
-/// An error that can occur when encoding/decoding JWTs
+/// An error that can occur when using kickstart
 #[derive(Debug)]
 pub struct Error(Box<ErrorKind>);
 
@@ -36,10 +36,14 @@ pub enum ErrorKind {
     MissingTemplateDefinition,
     InvalidTemplate,
     UnreadableStdin,
+    /// An error while cloning a repository
     Git { err: io::Error },
-
+    /// An error while doing IO (reading/writing files)
     Io { err: io::Error, path: PathBuf },
+    /// An error when rendering a template, where a template can also refer to a filename
+    /// in the case kickstart
     Tera { err: tera::Error, path: Option<PathBuf> },
+    /// An error while deserializing a template.toml into a struct
     Toml { err: toml::de::Error },
     /// Hints that destructuring should not be exhaustive.
     ///

@@ -174,6 +174,11 @@ And three more optional fields:
 
 ## Changelog
 
+### 0.1.7 (unreleased)
+
+- Work with Git aliases
+- The crate now works as a library as well as a binary
+
 ### 0.1.6 (2018-08-02)
 
 - Add a `--no-input` flag to the main command to generate a template from defaults
