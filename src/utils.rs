@@ -46,11 +46,12 @@ pub fn create_directory(path: &Path) -> Result<()> {
 
 /// Is it a remote or a local thing
 pub fn get_source(input: &str) -> Source {
-    // Should be a Regex once we add hg or other stuff
-    if input.starts_with("git@") || input.starts_with("http://") || input.starts_with("https://") {
-        Source::Git(input.to_string())
+    let path = Path::new(input);
+
+    if path.is_dir() {
+        Source::Local(path.to_path_buf())
     } else {
-        Source::Local(Path::new(input).to_path_buf())
+        Source::Git(input.to_string())
     }
 }
 
@@ -64,4 +65,39 @@ pub fn is_vcs(entry: &DirEntry) -> bool {
 /// See https://twitter.com/20100Prouillet/status/1022973478096527360
 pub fn is_binary(buf: &[u8]) -> bool {
     memchr(b'\x00', buf).is_some()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use tempfile::tempdir;
+    use super::*;
+
+    #[test]
+    fn can_detect_sources() {
+        let dir = tempdir().unwrap();
+        let folder1 = dir.path().join("working");
+        let folder2 = dir.path().join("also-working");
+        fs::create_dir(&folder1).unwrap();
+        fs::create_dir(&folder2).unwrap();
+        let mut inputs = vec![
+            // Local valid
+            (folder1.to_string_lossy().to_string(), Source::Local(folder1.to_path_buf())),
+            (folder2.to_string_lossy().to_string(), Source::Local(folder2.to_path_buf())),
+            // Git valid
+            ("https://git-server.local/git/Test".to_string(), Source::Git("https://git-server.local/git/Test".to_string())),
+            ("gitUser@git-server.local:git/Test".to_string(), Source::Git("gitUser@git-server.local:git/Test".to_string())),
+            ("git:git/Test".to_string(), Source::Git("git:git/Test".to_string())),
+            // Non existing local -> considered as a git and will fail later on
+            ("hello".to_string(), Source::Git("hello".to_string())),
+        ];
+        if !cfg!(windows) {
+            let folder3 = dir.path().join("not:git");
+            fs::create_dir(&folder3).unwrap();
+            inputs.push((folder3.to_string_lossy().to_string(), Source::Local(folder3.to_path_buf())));
+        }
+        for (input, expected) in inputs {
+            assert_eq!(get_source(&input), expected);
+        }
+    }
 }
