@@ -174,7 +174,7 @@ And three more optional fields:
 
 ## Changelog
 
-### 0.1.7 (unreleased)
+### 0.1.7 (2018-08-09)
 
 - Work with Git aliases
 - The crate now works as a library as well as a binary
