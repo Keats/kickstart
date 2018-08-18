@@ -65,7 +65,7 @@ authors = [
 
 ]
 # Optional, a list of keywords for this template
-kewyords = [
+keywords = [
 
 ]
 # Optional, those files will NOT be copied over when generating the template
