@@ -42,6 +42,7 @@ The main drawback compared to cookiecutter is the lack of hook scripts support, 
 $ kickstart examples/super-basic
 $ kickstart examples/complex -o Hello
 # Anywhere
+$ kickstart https://github.com/Keats/kickstart -s examples/super-basic
 $ kickstart https://github.com/Keats/kickstart-sample -o sample
 # Additionally, kickstart supports git URL shorthands (see [#19](https://github.com/Keats/kickstart/issues/19))
 # Here, gl maps to `https://gitlab.com/`

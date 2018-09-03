@@ -32,6 +32,13 @@ pub fn build_cli() -> App<'static, 'static> {
                 .help("Where to output the project: defaults to the current directory")
         )
         .arg(
+            Arg::with_name("sub-dir")
+                .short("s")
+                .long("sub-dir")
+                .takes_value(true)
+                .help("A subdirectory of the chosen template to use, to allow nested templates.")
+        )
+        .arg(
             Arg::with_name("no-input")
                 .long("no-input")
                 .help("Do not prompt for parameters and only use the defaults from template.toml")
@@ -90,8 +97,9 @@ fn main() {
                 .map(|p| Path::new(p).to_path_buf())
                 .unwrap_or_else(|| env::current_dir().unwrap());
             let no_input = matches.is_present("no-input");
+            let sub_dir = matches.value_of("sub-dir");
 
-            let template = match Template::from_input(template_path) {
+            let template = match Template::from_input(template_path, sub_dir) {
                 Ok(t) => t,
                 Err(e) => bail(e),
             };
