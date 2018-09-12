@@ -184,6 +184,16 @@ mod tests {
     }
 
     #[test]
+    fn can_generate_from_local_path_with_subdir() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
     fn can_generate_from_remote_repo() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
@@ -191,5 +201,15 @@ mod tests {
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
         assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
+    }
+
+    #[test]
+    fn can_generate_from_remote_repo_with_subdir() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex")).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
     }
 }
