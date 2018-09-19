@@ -27,16 +27,16 @@ impl Template {
     /// Load a template from a string.
     /// It will try to detect whether this is a local folder or whether
     /// it should try to clone it.
-    pub fn from_input(input: &str) -> Result<Template> {
+    pub fn from_input(input: &str, sub: Option<&str>) -> Result<Template> {
         match get_source(input) {
-            Source::Git(remote) => Template::from_git(&remote),
-            Source::Local(path) => Ok(Template::from_local(&path)),
+            Source::Git(remote) => Template::from_git(&remote, sub),
+            Source::Local(path) => Ok(Template::from_local(&path, sub)),
         }
     }
 
     /// Load a template from git.
     /// This will clone the repository if possible in the temporary directory of the user
-    pub fn from_git(remote: &str) -> Result<Template> {
+    pub fn from_git(remote: &str, sub: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
         tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
@@ -53,12 +53,16 @@ impl Template {
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
 
-        Ok(Template::from_local(&tmp))
+        Ok(Template::from_local(&tmp, sub))
     }
 
-    pub fn from_local(path: &PathBuf) -> Template {
+    pub fn from_local(path: &PathBuf, sub: Option<&str>) -> Template {
+        let mut buf = path.to_path_buf();
+        if let Some(dir) = sub {
+            buf.push(dir);
+        }
         Template {
-            path: path.to_path_buf(),
+            path: buf,
         }
     }
 
@@ -172,7 +176,17 @@ mod tests {
     #[test]
     fn can_generate_from_local_path() {
         let dir = tempdir().unwrap();
-        let tpl = Template::from_input("examples/complex").unwrap();
+        let tpl = Template::from_input("examples/complex", None).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn can_generate_from_local_path_with_subdir() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
@@ -182,10 +196,20 @@ mod tests {
     #[test]
     fn can_generate_from_remote_repo() {
         let dir = tempdir().unwrap();
-        let tpl = Template::from_input("https://github.com/Keats/rust-cli-template").unwrap();
+        let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
         assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
+    }
+
+    #[test]
+    fn can_generate_from_remote_repo_with_subdir() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex")).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(dir.path().join("some-project").join("logo.png").exists());
     }
 }
