@@ -175,6 +175,11 @@ And three more optional fields:
 
 ## Changelog
 
+### 0.1.8 (unreleased)
+
+- Allow loading templates from a subdirectory
+
+
 ### 0.1.7 (2018-08-09)
 
 - Work with Git aliases
