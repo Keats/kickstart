@@ -175,10 +175,9 @@ And three more optional fields:
 
 ## Changelog
 
-### 0.1.8 (unreleased)
+### 0.1.8 (2018-09-30)
 
 - Allow loading templates from a subdirectory
-
 
 ### 0.1.7 (2018-08-09)
 

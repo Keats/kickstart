@@ -1,6 +1,6 @@
 [package]
 name = "kickstart"
-version = "0.1.7"
+version = "0.1.8"
 description = "A simple way to get started with a project"
 authors = ["Vincent Prouillet <prouillet.vincent@gmail.com>"]
 license = "MIT"
