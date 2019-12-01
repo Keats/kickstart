@@ -15,7 +15,7 @@ jobs:
         include:
         - build: pinned
           os: ubuntu-18.04
-          rust: 1.34.0
+          rust: 1.36.0
         - build: stable
           os: ubuntu-18.04
           rust: stable
@@ -33,5 +33,5 @@ jobs:
         rust-version: ${{ matrix.rust }}
     - name: Build System Info
       run: rustc --version
-    - name: tests with default feature
+    - name: run tests
       run: cargo test
