@@ -4,10 +4,10 @@ extern crate kickstart;
 
 use std::env;
 use std::path::Path;
+use std::error::Error;
 
 use clap::{App, Arg, SubCommand, AppSettings};
 
-use kickstart::errors::{Error, ErrorKind};
 use kickstart::terminal;
 use kickstart::generation::Template;
 use kickstart::validate::validate_file;
@@ -54,18 +54,13 @@ pub fn build_cli() -> App<'static, 'static> {
         ])
 }
 
-fn bail(e: Error) -> ! {
-    // Special handling for Tera error-chain
-    match e.kind() {
-        ErrorKind::Tera { ref err, .. } => {
-            terminal::error(&format!("{}\n", e));
-            for e in err.iter().skip(1) {
-                terminal::error(&format!("{}\n", e));
-            }
-        }
-        _ => terminal::error(&format!("{}\n", e))
-    };
-
+fn bail(e: &dyn Error) -> ! {
+    terminal::error(&format!("Error: {}", e));
+    let mut cause = e.source();
+    while let Some(e) = cause {
+        terminal::error(&format!("Reason: {}", e));
+        cause = e.source();
+    }
     ::std::process::exit(1)
 }
 
@@ -77,7 +72,7 @@ fn main() {
         ("validate", Some(matches)) => {
             let errs = match validate_file(matches.value_of("path").unwrap()) {
                 Ok(e) => e,
-                Err(e) => bail(e),
+                Err(e) => bail(&e),
             };
 
             if !errs.is_empty() {
@@ -101,12 +96,12 @@ fn main() {
 
             let template = match Template::from_input(template_path, sub_dir) {
                 Ok(t) => t,
-                Err(e) => bail(e),
+                Err(e) => bail(&e),
             };
 
             match template.generate(&output_dir, no_input) {
                 Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
-                Err(e) => bail(e),
+                Err(e) => bail(&e),
             };
         }
     }

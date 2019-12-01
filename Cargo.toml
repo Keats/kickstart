@@ -7,15 +7,15 @@ license = "MIT"
 
 [dependencies]
 clap = "2"
-tera = "0.11"
+tera = "1.0.0-beta.21"
 walkdir = "2"
 serde_derive = "1"
 serde = "1"
-toml = "0.4"
+toml = "0.5"
 memchr = "2"
-glob = "0.2"
+glob = "0.3"
 regex = "1"
-term = "0.5"
+term = "0.6"
 
 [dev-dependencies]
 tempfile = "3"
