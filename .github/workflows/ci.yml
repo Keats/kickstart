@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [pinned, stable, nightly, macos, win-msvc]
+        build: [pinned, stable, macos, win-msvc]
         include:
         - build: pinned
           os: ubuntu-18.04
