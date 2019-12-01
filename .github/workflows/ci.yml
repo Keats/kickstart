@@ -19,9 +19,6 @@ jobs:
         - build: stable
           os: ubuntu-18.04
           rust: stable
-        - build: nightly
-          os: ubuntu-18.04
-          rust: nightly
         - build: macos
           os: macOS-latest
           rust: stable
