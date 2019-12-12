@@ -4,10 +4,9 @@ use std::path::Path;
 use regex::Regex;
 use toml::{self, Value};
 
-use crate::errors::{Result, ErrorKind, new_error};
 use crate::definition::TemplateDefinition;
+use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::read_file;
-
 
 /// Validate that the struct doesn't have bad data in it
 /// and that it doesn't have obvious logic flaws
@@ -22,9 +21,10 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
         match var.default {
             Value::String(_) | Value::Integer(_) | Value::Boolean(_) => (),
             _ => {
-                errs.push(
-                    format!("Variable `{}` has a default of type {}, which isn't allowed", var.name, type_str)
-                );
+                errs.push(format!(
+                    "Variable `{}` has a default of type {}, which isn't allowed",
+                    var.name, type_str
+                ));
             }
         }
 
@@ -36,9 +36,10 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
                 }
             }
             if !choice_found {
-                errs.push(
-                    format!("Variable `{}` has `{}` as default, which isn't in the choices", var.name, var.default)
-                );
+                errs.push(format!(
+                    "Variable `{}` has `{}` as default, which isn't in the choices",
+                    var.name, var.default
+                ));
             }
         }
 
@@ -47,37 +48,42 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
         if let Some(ref cond) = var.only_if {
             if let Some(ref t) = types.get(&cond.name) {
                 if **t != cond.value.type_str() {
-                    errs.push(
-                        format!("Variable `{}` depends on `{}={}`, but the type of `{}` is {}", var.name, cond.name, cond.value, cond.name, t)
-                    );
+                    errs.push(format!(
+                        "Variable `{}` depends on `{}={}`, but the type of `{}` is {}",
+                        var.name, cond.name, cond.value, cond.name, t
+                    ));
                 }
             } else {
-                errs.push(
-                    format!("Variable `{}` depends on `{}`, which wasn't asked", var.name, cond.name)
-                );
+                errs.push(format!(
+                    "Variable `{}` depends on `{}`, which wasn't asked",
+                    var.name, cond.name
+                ));
             }
         }
 
         if let Some(ref pattern) = var.validation {
             if !var.default.is_str() {
-                errs.push(
-                    format!("Variable `{}` has a validation regex but is not a string", var.name)
-                );
+                errs.push(format!(
+                    "Variable `{}` has a validation regex but is not a string",
+                    var.name
+                ));
                 continue;
             }
 
             match Regex::new(pattern) {
                 Ok(re) => {
                     if !re.is_match(&var.default.as_str().unwrap()) {
-                        errs.push(
-                            format!("Variable `{}` has a default that doesn't pass its validation regex", var.name)
-                        );
+                        errs.push(format!(
+                            "Variable `{}` has a default that doesn't pass its validation regex",
+                            var.name
+                        ));
                     }
                 }
                 Err(_) => {
-                    errs.push(
-                        format!("Variable `{}` has an invalid validation regex: {}", var.name, pattern)
-                    );
+                    errs.push(format!(
+                        "Variable `{}` has an invalid validation regex: {}",
+                        var.name, pattern
+                    ));
                 }
             }
         }
@@ -94,7 +100,6 @@ pub fn validate_file<T: AsRef<Path>>(path: T) -> Result<Vec<String>> {
     Ok(validate_definition(&definition))
 }
 
-
 #[cfg(test)]
 mod tests {
     use toml;
@@ -103,7 +108,8 @@ mod tests {
 
     #[test]
     fn valid_definition_has_no_errors() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -126,14 +132,17 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = "postgres" }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(errs.is_empty());
     }
 
     #[test]
     fn errors_default_not_in_choice() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -156,15 +165,21 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = "postgres" }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `pg_version` has `\"10.5\"` as default, which isn\'t in the choices");
+        assert_eq!(
+            errs[0],
+            "Variable `pg_version` has `\"10.5\"` as default, which isn\'t in the choices"
+        );
     }
 
     #[test]
     fn errors_only_if_unkwnon_variable_name() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -181,15 +196,21 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = true }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `pg_version` depends on `database`, which wasn\'t asked");
+        assert_eq!(
+            errs[0],
+            "Variable `pg_version` depends on `database`, which wasn\'t asked"
+        );
     }
 
     #[test]
     fn errors_only_if_not_matching_type() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -212,7 +233,9 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = true }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
         assert_eq!(errs[0], "Variable `pg_version` depends on `database=true`, but the type of `database` is string");
@@ -220,7 +243,8 @@ mod tests {
 
     #[test]
     fn errors_validation_regex_on_wrong_type() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -231,15 +255,21 @@ mod tests {
             prompt = "What's the name of your project?"
             validation = "[0-9]+"
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `project` has a validation regex but is not a string");
+        assert_eq!(
+            errs[0],
+            "Variable `project` has a validation regex but is not a string"
+        );
     }
 
     #[test]
     fn errors_invalid_validation_regex() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -250,15 +280,21 @@ mod tests {
             prompt = "What's the name of your project?"
             validation = "**[0-9]++"
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `project_name` has an invalid validation regex: **[0-9]++");
+        assert_eq!(
+            errs[0],
+            "Variable `project_name` has an invalid validation regex: **[0-9]++"
+        );
     }
 
     #[test]
     fn errors_default_doesnt_match_validation_regex() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -269,15 +305,21 @@ mod tests {
             prompt = "What's the name of your project?"
             validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `project_name` has a default that doesn\'t pass its validation regex");
+        assert_eq!(
+            errs[0],
+            "Variable `project_name` has a default that doesn\'t pass its validation regex"
+        );
     }
 
     #[test]
     fn errors_on_unsupported_type() {
-        let def: TemplateDefinition = toml::from_str(r#"
+        let def: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -288,9 +330,14 @@ mod tests {
             prompt = "What's the name of your project?"
             validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(errs[0], "Variable `project_name` has a default of type float, which isn\'t allowed");
+        assert_eq!(
+            errs[0],
+            "Variable `project_name` has a default of type float, which isn\'t allowed"
+        );
     }
 }

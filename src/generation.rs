@@ -1,19 +1,18 @@
 use std::env;
-use std::path::{Path, PathBuf};
-use std::io::Read;
 use std::fs::{self, File};
-use std::str;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str;
 
-use toml;
-use tera::{Tera, Context};
-use walkdir::WalkDir;
 use glob::Pattern;
+use tera::{Context, Tera};
+use toml;
+use walkdir::WalkDir;
 
-use crate::errors::{Result, ErrorKind, new_error};
-use crate::utils::{Source, get_source, read_file, write_file, create_directory, is_binary, is_vcs};
 use crate::definition::TemplateDefinition;
-
+use crate::errors::{new_error, ErrorKind, Result};
+use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
 
 /// The current template being generated
 #[derive(Debug, PartialEq)]
@@ -26,16 +25,16 @@ impl Template {
     /// Load a template from a string.
     /// It will try to detect whether this is a local folder or whether
     /// it should try to clone it.
-    pub fn from_input(input: &str, sub: Option<&str>) -> Result<Template> {
+    pub fn from_input(input: &str, sub_dir: Option<&str>) -> Result<Template> {
         match get_source(input) {
-            Source::Git(remote) => Template::from_git(&remote, sub),
-            Source::Local(path) => Ok(Template::from_local(&path, sub)),
+            Source::Git(remote) => Template::from_git(&remote, sub_dir),
+            Source::Local(path) => Ok(Template::from_local(&path, sub_dir)),
         }
     }
 
     /// Load a template from git.
     /// This will clone the repository if possible in the temporary directory of the user
-    pub fn from_git(remote: &str, sub: Option<&str>) -> Result<Template> {
+    pub fn from_git(remote: &str, sub_dir: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
         tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
@@ -52,17 +51,15 @@ impl Template {
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
 
-        Ok(Template::from_local(&tmp, sub))
+        Ok(Template::from_local(&tmp, sub_dir))
     }
 
-    pub fn from_local(path: &PathBuf, sub: Option<&str>) -> Template {
+    pub fn from_local(path: &PathBuf, sub_dir: Option<&str>) -> Template {
         let mut buf = path.to_path_buf();
-        if let Some(dir) = sub {
+        if let Some(dir) = sub_dir {
             buf.push(dir);
         }
-        Template {
-            path: buf,
-        }
+        Template { path: buf }
     }
 
     /// Generate the template at the given output directory
@@ -87,15 +84,34 @@ impl Template {
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
-        let patterns: Vec<Pattern> = definition.copy_without_render
+        let patterns: Vec<Pattern> = definition
+            .copy_without_render
             .iter()
             .map(|s| Pattern::new(s).unwrap())
             .collect();
 
+        let start_path = if let Some(ref directory) = definition.directory {
+            self.path.join(&directory)
+        } else {
+            self.path.clone()
+        };
+
         // And now generate the files in the output dir given
-        let walker = WalkDir::new(&self.path)
+        let walker = WalkDir::new(&start_path)
             .into_iter()
-            .filter_entry(|e| !is_vcs(e))
+            .filter_entry(|e| {
+                // Ignore .git/ folder
+                let relative_path = e
+                    .path()
+                    .strip_prefix(&start_path)
+                    .expect("Stripping prefix");
+                if relative_path.starts_with(".git/")
+                    || (relative_path.is_dir() && relative_path.starts_with(".git"))
+                {
+                    return false;
+                }
+                true
+            })
             .filter_map(|e| e.ok());
 
         'outer: for entry in walker {
@@ -127,16 +143,28 @@ impl Template {
             let mut buffer = Vec::new();
             f.read_to_end(&mut buffer)?;
 
-            let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
+            let no_render = patterns
+                .iter()
+                .map(|p| p.matches_path(&real_path))
+                .any(|x| x);
 
             if no_render || is_binary(&buffer) {
-                fs::copy(&entry.path(), &real_path)
-                    .map_err(|err| new_error(ErrorKind::Io { err, path: entry.path().to_path_buf() }))?;
+                fs::copy(&entry.path(), &real_path).map_err(|err| {
+                    new_error(ErrorKind::Io {
+                        err,
+                        path: entry.path().to_path_buf(),
+                    })
+                })?;
                 continue;
             }
 
             let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera { err, path: Some(entry.path().to_path_buf()) }))?;
+                .map_err(|err| {
+                    new_error(ErrorKind::Tera {
+                        err,
+                        path: Some(entry.path().to_path_buf()),
+                    })
+                })?;
             write_file(&real_path, &contents)?;
         }
 
@@ -151,11 +179,19 @@ impl Template {
                             continue;
                         }
                         if path_to_delete.is_dir() {
-                            fs::remove_dir_all(&path_to_delete)
-                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                            fs::remove_dir_all(&path_to_delete).map_err(|err| {
+                                new_error(ErrorKind::Io {
+                                    err,
+                                    path: path_to_delete.to_path_buf(),
+                                })
+                            })?;
                         } else {
-                            fs::remove_file(&path_to_delete)
-                                .map_err(|err| new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() }))?;
+                            fs::remove_file(&path_to_delete).map_err(|err| {
+                                new_error(ErrorKind::Io {
+                                    err,
+                                    path: path_to_delete.to_path_buf(),
+                                })
+                            })?;
                         }
                     }
                 }
@@ -178,8 +214,21 @@ mod tests {
         let tpl = Template::from_input("examples/complex", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
-        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(!dir
+            .path()
+            .join("some-project")
+            .join("template.toml")
+            .exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn can_generate_from_local_path_with_directory() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("examples/with-directory", None).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(dir.path().join("Hello").join("Howdy.py").exists());
     }
 
     #[test]
@@ -188,7 +237,11 @@ mod tests {
         let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
-        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(!dir
+            .path()
+            .join("some-project")
+            .join("template.toml")
+            .exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
     }
 
@@ -205,10 +258,18 @@ mod tests {
     #[test]
     fn can_generate_from_remote_repo_with_subdir() {
         let dir = tempdir().unwrap();
-        let tpl = Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex")).unwrap();
+        let tpl = Template::from_input(
+            "https://github.com/Keats/kickstart",
+            Some("examples/complex"),
+        )
+        .unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
-        assert!(!dir.path().join("some-project").join("template.toml").exists());
+        assert!(!dir
+            .path()
+            .join("some-project")
+            .join("template.toml")
+            .exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
     }
 }

@@ -1,0 +1,19 @@
+name = "Super basic"
+description = "A very simple template"
+kickstart_version = 1
+directory = "{{directory_name}}"
+
+[[variables]]
+name = "directory_name"
+default = "Hello"
+prompt = "Directory name?"
+
+[[variables]]
+name = "file_name"
+default = "Howdy"
+prompt = "File name?"
+
+[[variables]]
+name = "greeting_recipient"
+default = "Vincent"
+prompt = "Who am I greeting?"

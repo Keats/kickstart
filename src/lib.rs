@@ -7,9 +7,9 @@
 //! for an example on how to use it.
 
 mod definition;
-mod prompt;
-mod utils;
-pub mod terminal;
-pub mod validate;
-pub mod generation;
 pub mod errors;
+pub mod generation;
+mod prompt;
+pub mod terminal;
+mod utils;
+pub mod validate;

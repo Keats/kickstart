@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
+use serde::Deserialize;
 use toml::Value;
-use serde::{Deserialize};
 
-use crate::prompt::{ask_string, ask_bool, ask_choices, ask_integer};
-use crate::errors::{Result, ErrorKind, new_error};
-
+use crate::errors::{new_error, ErrorKind, Result};
+use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -58,6 +57,9 @@ pub struct TemplateDefinition {
     /// Some keywords/tags
     #[serde(default)]
     pub keywords: Vec<String>,
+    /// The directory in which the template files are.
+    /// Useful if a template has its own docs, README, CI and various files
+    pub directory: Option<String>,
     /// Do not copy those directories/files
     #[serde(default)]
     pub ignore: Vec<String>,
@@ -140,7 +142,6 @@ impl TemplateDefinition {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use toml;
@@ -149,7 +150,8 @@ mod tests {
 
     #[test]
     fn can_load_template_and_work_with_no_input() {
-        let tpl: TemplateDefinition = toml::from_str(r#"
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -172,7 +174,9 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = "postgres" }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
         let res = tpl.ask_questions(true);
@@ -181,7 +185,8 @@ mod tests {
 
     #[test]
     fn only_if_questions_are_skipped_if_cond_invalid() {
-        let tpl: TemplateDefinition = toml::from_str(r#"
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -204,7 +209,9 @@ mod tests {
             choices = ["10.4", "9.3"]
             only_if = { name = "database", value = "mysql" }
 
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
         let res = tpl.ask_questions(true);
@@ -215,7 +222,8 @@ mod tests {
 
     #[test]
     fn nested_only_if_questions_are_skipped_if_initial_cond_invalid() {
-        let tpl: TemplateDefinition = toml::from_str(r#"
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
             name = "Test template"
             description = "A description"
             kickstart_version = 1
@@ -243,7 +251,9 @@ mod tests {
             prompt = "Add pgBouncer?"
             default = true
             only_if = { name = "pg_version", value = "10.4" }
-        "#).unwrap();
+        "#,
+        )
+        .unwrap();
 
         assert_eq!(tpl.variables.len(), 4);
         let res = tpl.ask_questions(true);

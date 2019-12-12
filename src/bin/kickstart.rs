@@ -1,13 +1,12 @@
 use std::env;
-use std::path::Path;
 use std::error::Error;
+use std::path::Path;
 
-use clap::{App, Arg, SubCommand, AppSettings, crate_authors, crate_version, crate_description};
+use clap::{crate_authors, crate_description, crate_version, App, AppSettings, Arg, SubCommand};
 
-use kickstart::terminal;
 use kickstart::generation::Template;
+use kickstart::terminal;
 use kickstart::validate::validate_file;
-
 
 pub fn build_cli() -> App<'static, 'static> {
     App::new("kickstart")
@@ -18,36 +17,34 @@ pub fn build_cli() -> App<'static, 'static> {
         .arg(
             Arg::with_name("template")
                 .required(true)
-                .help("Template to use: a local path or a HTTP url pointing to a Git repository")
+                .help("Template to use: a local path or a HTTP url pointing to a Git repository"),
         )
         .arg(
             Arg::with_name("output-dir")
                 .short("o")
                 .long("output-dir")
                 .takes_value(true)
-                .help("Where to output the project: defaults to the current directory")
+                .help("Where to output the project: defaults to the current directory"),
         )
         .arg(
             Arg::with_name("sub-dir")
                 .short("s")
                 .long("sub-dir")
                 .takes_value(true)
-                .help("A subdirectory of the chosen template to use, to allow nested templates.")
+                .help("A subdirectory of the chosen template to use, to allow nested templates."),
         )
         .arg(
             Arg::with_name("no-input")
                 .long("no-input")
-                .help("Do not prompt for parameters and only use the defaults from template.toml")
+                .help("Do not prompt for parameters and only use the defaults from template.toml"),
         )
-        .subcommands(vec![
-            SubCommand::with_name("validate")
-                .about("Validates that a template.toml is valid")
-                .arg(
-                    Arg::with_name("path")
-                        .required(true)
-                        .help("The path to the template.toml")
-                ),
-        ])
+        .subcommands(vec![SubCommand::with_name("validate")
+            .about("Validates that a template.toml is valid")
+            .arg(
+                Arg::with_name("path")
+                    .required(true)
+                    .help("The path to the template.toml"),
+            )])
 }
 
 fn bail(e: &dyn Error) -> ! {
@@ -59,7 +56,6 @@ fn bail(e: &dyn Error) -> ! {
     }
     ::std::process::exit(1)
 }
-
 
 fn main() {
     let matches = build_cli().get_matches();
@@ -84,7 +80,8 @@ fn main() {
         _ => {
             // The actual generation call
             let template_path = matches.value_of("template").unwrap();
-            let output_dir = matches.value_of("output-dir")
+            let output_dir = matches
+                .value_of("output-dir")
                 .map(|p| Path::new(p).to_path_buf())
                 .unwrap_or_else(|| env::current_dir().unwrap());
             let no_input = matches.is_present("no-input");

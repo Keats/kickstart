@@ -3,8 +3,6 @@
 A CLI tool to easily get a new project up and running by using pre-made templates.
 This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
-[![Linux build status](https://travis-ci.org/Keats/kickstart.svg?branch=master)](https://travis-ci.org/Keats/kickstart)
-[![Windows build status](https://ci.appveyor.com/api/projects/status/github/Keats/kickstart?svg=true)](https://ci.appveyor.com/project/Keats/kickstart)
 [![Crates.io](https://img.shields.io/crates/v/kickstart.svg)](https://crates.io/crates/kickstart)
 
 ![kickstart.gif](./kickstart.gif)
@@ -77,6 +75,10 @@ ignore = [
     ".travis.yml",
     "docs",
 ]
+# If this is set, kickstart will use this directory as a base for the template instead of
+# the root directory. This is useful when your template has its own documentation/CI/etc and you don't want
+# to ignore it.
+directory = "some-directory"
 # Optional, a list of patterns. All files matching one of the patterns will
 # be copied over without going through Tera.
 # Use it for files that contain syntax similar to Tera for example
