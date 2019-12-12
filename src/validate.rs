@@ -4,9 +4,9 @@ use std::path::Path;
 use regex::Regex;
 use toml::{self, Value};
 
-use errors::{Result, ErrorKind, new_error};
-use definition::TemplateDefinition;
-use utils::read_file;
+use crate::errors::{Result, ErrorKind, new_error};
+use crate::definition::TemplateDefinition;
+use crate::utils::read_file;
 
 
 /// Validate that the struct doesn't have bad data in it

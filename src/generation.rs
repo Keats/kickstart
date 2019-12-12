@@ -10,10 +10,9 @@ use tera::{Tera, Context};
 use walkdir::WalkDir;
 use glob::Pattern;
 
-use errors::{Result, ErrorKind, new_error};
-use utils::{Source, get_source, read_file, write_file, create_directory};
-use utils::{is_vcs, is_binary};
-use definition::TemplateDefinition;
+use crate::errors::{Result, ErrorKind, new_error};
+use crate::utils::{Source, get_source, read_file, write_file, create_directory, is_binary, is_vcs};
+use crate::definition::TemplateDefinition;
 
 
 /// The current template being generated

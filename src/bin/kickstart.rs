@@ -1,12 +1,8 @@
-#[macro_use]
-extern crate clap;
-extern crate kickstart;
-
 use std::env;
 use std::path::Path;
 use std::error::Error;
 
-use clap::{App, Arg, SubCommand, AppSettings};
+use clap::{App, Arg, SubCommand, AppSettings, crate_authors, crate_version, crate_description};
 
 use kickstart::terminal;
 use kickstart::generation::Template;

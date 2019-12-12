@@ -3,8 +3,8 @@ use std::io::{self, Write, BufRead};
 use regex::Regex;
 use toml;
 
-use errors::{Result, new_error, ErrorKind};
-use terminal;
+use crate::errors::{Result, new_error, ErrorKind};
+use crate::terminal;
 
 /// Wait for user input and return what they typed
 fn read_line() -> Result<String> {

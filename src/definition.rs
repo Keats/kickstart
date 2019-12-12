@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use toml::Value;
+use serde::{Deserialize};
 
-use prompt::{ask_string, ask_bool, ask_choices, ask_integer};
-use errors::{Result, ErrorKind, new_error};
+use crate::prompt::{ask_string, ask_bool, ask_choices, ask_integer};
+use crate::errors::{Result, ErrorKind, new_error};
 
 
 /// A condition for a question to be asked

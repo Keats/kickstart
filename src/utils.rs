@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use walkdir::DirEntry;
 use memchr::memchr;
 
-use errors::{Result, ErrorKind, new_error};
+use crate::errors::{Result, ErrorKind, new_error};
 
 
 #[derive(Debug, Clone, Eq, PartialEq)]
