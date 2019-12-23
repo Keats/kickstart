@@ -1,0 +1,78 @@
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [linux, macos, win-msvc]
+        include:
+        - build: linux
+          os: ubuntu-18.04
+          rust: stable
+        - build: macos
+          os: macOS-latest
+          rust: stable
+        - build: win-msvc
+          os: windows-2019
+          rust: stable
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Rust
+      uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust }}
+
+    - name: Build System Info
+      run: rustc --version
+
+    - name: Build final binary
+      run: cargo build --release
+
+    - name: tar.gz the binary (Linux + Mac)
+      if: matrix.os != 'win-msvc'
+      run: tar -zcvf kickstart.tar.gz target/release/kickstart
+
+    - name: zip the binary (Windows only)
+      if: matrix.os == 'win-msvc'
+      run: zip kickstart.zip target/release/kickstart
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      if: matrix.os == 'win-msvc'
+      id: upload-release-asset-windows
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./kickstart.zip
+        asset_name: ${{ github.ref }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset
+      if: matrix.os != 'win-msvc'
+      id: upload-release-asset-other
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./kickstart.tar.gz
+        asset_name: ${{ github.ref }}.tar.gz
+        asset_content_type: application/gzip

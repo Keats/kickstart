@@ -1,5 +1,5 @@
-use std::io::prelude::*;
 use std::fmt;
+use std::io::prelude::*;
 
 use term;
 
@@ -11,7 +11,7 @@ pub fn error(message: &str) {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
             }
-            Err(_) => writeln!(t, "{}", message).unwrap()
+            Err(_) => writeln!(t, "{}", message).unwrap(),
         };
     } else {
         eprint!("{}", message);
@@ -26,7 +26,7 @@ pub fn success(message: &str) {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
             }
-            Err(_) => writeln!(t, "{}", message).unwrap()
+            Err(_) => writeln!(t, "{}", message).unwrap(),
         };
     } else {
         eprint!("{}", message);
@@ -41,7 +41,7 @@ pub fn bold(message: &str) {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
             }
-            Err(_) => write!(t, "{}", message).unwrap()
+            Err(_) => write!(t, "{}", message).unwrap(),
         };
     } else {
         eprint!("{}", message);
@@ -90,7 +90,11 @@ pub fn bool_question(prompt: &str, default: bool) {
         write!(t, "{} ", prompt).unwrap();
         t.reset().unwrap();
         t.fg(term::color::YELLOW).unwrap();
-        if default { write!(t, "[Y/n]: ").unwrap() } else { write!(t, "[y/N]: ").unwrap() }
+        if default {
+            write!(t, "[Y/n]: ").unwrap()
+        } else {
+            write!(t, "[y/N]: ").unwrap()
+        }
         t.reset().unwrap();
     } else {
         eprint!("{} {}: ", prompt, default_str);

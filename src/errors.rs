@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use std::error::Error as StdError;
 use std::fmt;
 use std::io;
+use std::path::PathBuf;
 use std::result;
 
 use tera;
@@ -9,25 +9,18 @@ use toml;
 
 /// A crate private constructor for `Error`.
 pub(crate) fn new_error(kind: ErrorKind) -> Error {
-    Error(Box::new(kind))
+    Error { kind, source: None }
 }
 
 /// A type alias for `Result<T, kickstart::Error>`.
 pub type Result<T> = result::Result<T, Error>;
 
-/// An error that can occur when using kickstart
+/// The Error type
 #[derive(Debug)]
-pub struct Error(Box<ErrorKind>);
-
-impl Error {
-    /// Return the specific type of this error.
-    pub fn kind(&self) -> &ErrorKind {
-        &self.0
-    }
-    /// Unwrap this error into its underlying type.
-    pub fn into_kind(self) -> ErrorKind {
-        *self.0
-    }
+pub struct Error {
+    /// Kind of error
+    pub kind: ErrorKind,
+    pub source: Option<Box<dyn StdError>>,
 }
 
 /// The specific type of an error.
@@ -37,14 +30,24 @@ pub enum ErrorKind {
     InvalidTemplate,
     UnreadableStdin,
     /// An error while cloning a repository
-    Git { err: io::Error },
+    Git {
+        err: io::Error,
+    },
     /// An error while doing IO (reading/writing files)
-    Io { err: io::Error, path: PathBuf },
+    Io {
+        err: io::Error,
+        path: PathBuf,
+    },
     /// An error when rendering a template, where a template can also refer to a filename
     /// in the case kickstart
-    Tera { err: tera::Error, path: Option<PathBuf> },
+    Tera {
+        err: tera::Error,
+        path: Option<PathBuf>,
+    },
     /// An error while deserializing a template.toml into a struct
-    Toml { err: toml::de::Error },
+    Toml {
+        err: toml::de::Error,
+    },
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -62,7 +65,7 @@ impl From<io::Error> for Error {
 
 impl StdError for Error {
     fn description(&self) -> &str {
-        match *self.0 {
+        match self.kind {
             ErrorKind::Io { ref err, .. } => err.description(),
             ErrorKind::Tera { ref err, .. } => err.description(),
             ErrorKind::InvalidTemplate => "invalid template",
@@ -75,7 +78,7 @@ impl StdError for Error {
     }
 
     fn cause(&self) -> Option<&dyn StdError> {
-        match *self.0 {
+        match self.kind {
             ErrorKind::Io { ref err, .. } => Some(err),
             ErrorKind::Tera { ref err, .. } => Some(err),
             ErrorKind::Toml { ref err } => Some(err),
@@ -86,11 +89,22 @@ impl StdError for Error {
             _ => unreachable!(),
         }
     }
+
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        let mut source = self.source.as_ref().map(|c| &**c);
+        if source.is_none() {
+            if let ErrorKind::Tera { ref err, .. } = self.kind {
+                source = err.source();
+            }
+        }
+
+        source
+    }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self.0 {
+        match self.kind {
             ErrorKind::Io { ref err, ref path } => write!(f, "{}: {:?}", err, path),
             ErrorKind::Tera { ref err, ref path } => {
                 if let Some(p) = path {

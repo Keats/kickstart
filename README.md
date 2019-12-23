@@ -3,8 +3,6 @@
 A CLI tool to easily get a new project up and running by using pre-made templates.
 This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter).
 
-[![Linux build status](https://travis-ci.org/Keats/kickstart.svg?branch=master)](https://travis-ci.org/Keats/kickstart)
-[![Windows build status](https://ci.appveyor.com/api/projects/status/github/Keats/kickstart?svg=true)](https://ci.appveyor.com/project/Keats/kickstart)
 [![Crates.io](https://img.shields.io/crates/v/kickstart.svg)](https://crates.io/crates/kickstart)
 
 ![kickstart.gif](./kickstart.gif)
@@ -28,12 +26,15 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - Simple to use
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/) - a template engine inspired by Jinja2
-- Choose your own adventure: supports conditional questions based on previous answers
-- Can load templates from a local directory or from a Git repository
-- Has conditional cleanup to not let irrelevant files in the projects after generation
+- Choose your own adventure: it supports conditional questions based on previous answers
+- It can load templates from a local directory or from a Git repository
+- It has conditional cleanup to not let irrelevant files in the output directory after generation
 - Templates can be made for any kind of projects/languages
 
 The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
+
+Lastly, Windows does not allow `|` in file paths so if you want your template to be cross-platform make sure to not use
+filters in directories/filenames.
 
 ## Try it out
 
@@ -77,6 +78,10 @@ ignore = [
     ".travis.yml",
     "docs",
 ]
+# If this is set, kickstart will use this directory as a base for the template instead of
+# the root directory. This is useful when your template has its own documentation/CI/etc and you don't want
+# to ignore it.
+directory = "some-directory"
 # Optional, a list of patterns. All files matching one of the patterns will
 # be copied over without going through Tera.
 # Use it for files that contain syntax similar to Tera for example
@@ -174,6 +179,12 @@ And three more optional fields:
 - [Rust CLI application](https://github.com/Keats/rust-cli-template)
 
 ## Changelog
+
+### 1.0.0 (unreleased)
+
+- Update all dependencies
+- Add the `directory` field to change the template directory away from the current one
+- VCS files are not automatically ignored anymore
 
 ### 0.1.8 (2018-09-30)
 

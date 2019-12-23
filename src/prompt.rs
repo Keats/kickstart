@@ -1,20 +1,17 @@
-use std::io::{self, Write, BufRead};
+use std::io::{self, BufRead, Write};
 
 use regex::Regex;
 use toml;
 
-use errors::{Result, new_error, ErrorKind};
-use terminal;
+use crate::errors::{new_error, ErrorKind, Result};
+use crate::terminal;
 
 /// Wait for user input and return what they typed
 fn read_line() -> Result<String> {
     let stdin = io::stdin();
     let stdin = stdin.lock();
     let mut lines = stdin.lines();
-    lines
-        .next()
-        .and_then(|l| l.ok())
-        .ok_or_else(|| new_error(ErrorKind::UnreadableStdin))
+    lines.next().and_then(|l| l.ok()).ok_or_else(|| new_error(ErrorKind::UnreadableStdin))
 }
 
 /// Ask a yes/no question to the user
@@ -83,7 +80,11 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
 }
 
 /// Ask users to make a choice between various options
-pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &[toml::Value]) -> Result<toml::Value> {
+pub fn ask_choices(
+    prompt: &str,
+    default: &toml::Value,
+    choices: &[toml::Value],
+) -> Result<toml::Value> {
     terminal::bold(&format!("{}: \n", prompt));
     let mut lines = vec![];
     let mut default_index = 1;
@@ -97,7 +98,11 @@ pub fn ask_choices(prompt: &str, default: &toml::Value, choices: &[toml::Value])
         }
     }
 
-    terminal::basic_question(&format!("  > Choose from {}..{}", 1, lines.len()), &default_index, &None);
+    terminal::basic_question(
+        &format!("  > Choose from {}..{}", 1, lines.len()),
+        &default_index,
+        &None,
+    );
 
     let _ = io::stdout().flush();
     let input = read_line()?;
