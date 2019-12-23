@@ -19,3 +19,6 @@ term = "0.6"
 
 [dev-dependencies]
 tempfile = "3"
+
+[badges]
+maintenance = { status = "actively-developed" }
