@@ -15,23 +15,13 @@ pub enum Source {
 pub fn read_file(p: &Path) -> Result<String> {
     let mut f = match File::open(p) {
         Ok(f) => f,
-        Err(err) => {
-            return Err(new_error(ErrorKind::Io {
-                err,
-                path: p.to_path_buf(),
-            }))
-        }
+        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() })),
     };
 
     let mut contents = String::new();
     match f.read_to_string(&mut contents) {
         Ok(_) => (),
-        Err(err) => {
-            return Err(new_error(ErrorKind::Io {
-                err,
-                path: p.to_path_buf(),
-            }))
-        }
+        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() })),
     };
 
     Ok(contents)
@@ -83,14 +73,8 @@ mod tests {
         fs::create_dir(&folder2).unwrap();
         let mut inputs = vec![
             // Local valid
-            (
-                folder1.to_string_lossy().to_string(),
-                Source::Local(folder1.to_path_buf()),
-            ),
-            (
-                folder2.to_string_lossy().to_string(),
-                Source::Local(folder2.to_path_buf()),
-            ),
+            (folder1.to_string_lossy().to_string(), Source::Local(folder1.to_path_buf())),
+            (folder2.to_string_lossy().to_string(), Source::Local(folder2.to_path_buf())),
             // Git valid
             (
                 "https://git-server.local/git/Test".to_string(),
@@ -100,10 +84,7 @@ mod tests {
                 "gitUser@git-server.local:git/Test".to_string(),
                 Source::Git("gitUser@git-server.local:git/Test".to_string()),
             ),
-            (
-                "git:git/Test".to_string(),
-                Source::Git("git:git/Test".to_string()),
-            ),
+            ("git:git/Test".to_string(), Source::Git("git:git/Test".to_string())),
             // Non existing local -> considered as a git and will fail later on
             ("hello".to_string(), Source::Git("hello".to_string())),
         ];

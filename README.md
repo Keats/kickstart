@@ -26,12 +26,15 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - Simple to use
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
 - All templating done through [Tera](https://tera.netlify.com/docs/installation/) - a template engine inspired by Jinja2
-- Choose your own adventure: supports conditional questions based on previous answers
-- Can load templates from a local directory or from a Git repository
-- Has conditional cleanup to not let irrelevant files in the projects after generation
+- Choose your own adventure: it supports conditional questions based on previous answers
+- It can load templates from a local directory or from a Git repository
+- It has conditional cleanup to not let irrelevant files in the output directory after generation
 - Templates can be made for any kind of projects/languages
 
 The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
+
+Lastly, Windows does not allow `|` in file paths so if you want your template to be cross-platform make sure to not use
+filters in directories/filenames.
 
 ## Try it out
 

@@ -108,11 +108,7 @@ impl TemplateDefinition {
 
             match &var.default {
                 Value::Boolean(b) => {
-                    let res = if no_input {
-                        *b
-                    } else {
-                        ask_bool(&var.prompt, *b)?
-                    };
+                    let res = if no_input { *b } else { ask_bool(&var.prompt, *b)? };
                     vals.insert(var.name.clone(), Value::Boolean(res));
                     continue;
                 }
@@ -126,11 +122,7 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::Integer(i) => {
-                    let res = if no_input {
-                        *i
-                    } else {
-                        ask_integer(&var.prompt, *i)?
-                    };
+                    let res = if no_input { *i } else { ask_integer(&var.prompt, *i)? };
                     vals.insert(var.name.clone(), Value::Integer(res));
                     continue;
                 }

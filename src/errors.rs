@@ -59,10 +59,7 @@ pub enum ErrorKind {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
-        new_error(ErrorKind::Io {
-            err,
-            path: PathBuf::new(),
-        })
+        new_error(ErrorKind::Io { err, path: PathBuf::new() })
     }
 }
 

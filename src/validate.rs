@@ -201,10 +201,7 @@ mod tests {
         .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(
-            errs[0],
-            "Variable `pg_version` depends on `database`, which wasn\'t asked"
-        );
+        assert_eq!(errs[0], "Variable `pg_version` depends on `database`, which wasn\'t asked");
     }
 
     #[test]
@@ -260,10 +257,7 @@ mod tests {
         .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(
-            errs[0],
-            "Variable `project` has a validation regex but is not a string"
-        );
+        assert_eq!(errs[0], "Variable `project` has a validation regex but is not a string");
     }
 
     #[test]
@@ -285,10 +279,7 @@ mod tests {
         .unwrap();
         let errs = validate_definition(&def);
         assert!(!errs.is_empty());
-        assert_eq!(
-            errs[0],
-            "Variable `project_name` has an invalid validation regex: **[0-9]++"
-        );
+        assert_eq!(errs[0], "Variable `project_name` has an invalid validation regex: **[0-9]++");
     }
 
     #[test]

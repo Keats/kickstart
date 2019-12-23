@@ -40,11 +40,7 @@ pub fn build_cli() -> App<'static, 'static> {
         )
         .subcommands(vec![SubCommand::with_name("validate")
             .about("Validates that a template.toml is valid")
-            .arg(
-                Arg::with_name("path")
-                    .required(true)
-                    .help("The path to the template.toml"),
-            )])
+            .arg(Arg::with_name("path").required(true).help("The path to the template.toml"))])
 }
 
 fn bail(e: &dyn Error) -> ! {

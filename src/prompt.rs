@@ -11,10 +11,7 @@ fn read_line() -> Result<String> {
     let stdin = io::stdin();
     let stdin = stdin.lock();
     let mut lines = stdin.lines();
-    lines
-        .next()
-        .and_then(|l| l.ok())
-        .ok_or_else(|| new_error(ErrorKind::UnreadableStdin))
+    lines.next().and_then(|l| l.ok()).ok_or_else(|| new_error(ErrorKind::UnreadableStdin))
 }
 
 /// Ask a yes/no question to the user
