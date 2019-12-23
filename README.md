@@ -177,6 +177,12 @@ And three more optional fields:
 
 ## Changelog
 
+### 1.0.0 (unreleased)
+
+- Update all dependencies
+- Add the `directory` field to change the template directory away from the current one
+- VCS files are not automatically ignored anymore
+
 ### 0.1.8 (2018-09-30)
 
 - Allow loading templates from a subdirectory
