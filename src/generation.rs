@@ -37,11 +37,11 @@ impl Template {
     pub fn from_git(remote: &str, sub_dir: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
+        println!("Tmp dir: {:?}", tmp);
         tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }
-        println!("Cloning the repository in your temporary folder...");
 
         // Use git command rather than git2 as it seems there are some issues building it
         // on some platforms:
@@ -50,7 +50,6 @@ impl Template {
             .args(&["clone", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
-
         Ok(Template::from_local(&tmp, sub_dir))
     }
 
