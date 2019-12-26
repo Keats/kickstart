@@ -42,7 +42,6 @@ impl Template {
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }
-        println!("Cloning the repository in your temporary folder...");
 
         // Use git command rather than git2 as it seems there are some issues building it
         // on some platforms:
@@ -51,7 +50,6 @@ impl Template {
             .args(&["clone", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
-        println!("Successfully cloned");
         Ok(Template::from_local(&tmp, sub_dir))
     }
 
@@ -219,6 +217,10 @@ mod tests {
 
     #[test]
     fn can_generate_from_remote_repo() {
+        println!("{:?}", env::var("TRAVIS_BRANCH"));
+        if env::var("TRAVIS_BRANCH").is_ok() {
+            env::set_var("TMPDIR", "./");
+        }
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
@@ -230,6 +232,9 @@ mod tests {
 
     #[test]
     fn can_generate_from_remote_repo_with_subdir() {
+        if env::var("TRAVIS_BRANCH").is_ok() {
+            env::set_var("TMPDIR", "./");
+        }
         let dir = tempdir().unwrap();
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
