@@ -217,10 +217,6 @@ mod tests {
 
     #[test]
     fn can_generate_from_remote_repo() {
-        println!("{:?}", env::var("TRAVIS_BRANCH"));
-        if env::var("TRAVIS_BRANCH").is_ok() {
-            env::set_var("TMPDIR", "./");
-        }
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
@@ -232,9 +228,6 @@ mod tests {
 
     #[test]
     fn can_generate_from_remote_repo_with_subdir() {
-        if env::var("TRAVIS_BRANCH").is_ok() {
-            env::set_var("TMPDIR", "./");
-        }
         let dir = tempdir().unwrap();
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
