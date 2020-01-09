@@ -180,7 +180,7 @@ And three more optional fields:
 
 ## Changelog
 
-### 1.0.0 (unreleased)
+### 0.2.0 (2020-01-09)
 
 - Update all dependencies
 - Add the `directory` field to change the template directory away from the current one
