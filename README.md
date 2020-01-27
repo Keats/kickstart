@@ -25,7 +25,7 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - Single binary: no need to install a virtualenv or anything else
 - Simple to use
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
-- All templating done through [Tera](https://tera.netlify.com/docs/installation/) - a template engine inspired by Jinja2
+- All templating done through [Tera](https://tera.netlify.com/docs/) - a template engine inspired by Jinja2
 - Choose your own adventure: it supports conditional questions based on previous answers
 - It can load templates from a local directory or from a Git repository
 - It has conditional cleanup to not let irrelevant files in the output directory after generation
