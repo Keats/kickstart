@@ -13,6 +13,7 @@ use walkdir::WalkDir;
 use crate::definition::TemplateDefinition;
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
+use slug::slugify;
 
 /// The current template being generated
 #[derive(Debug, PartialEq)]
@@ -107,6 +108,9 @@ impl Template {
             })
             .filter_map(|e| e.ok());
 
+        // Register the `slug` filter
+        Tera::default().register_filter("slugify", |value, _| slugify(value));
+
         'outer: for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
@@ -120,6 +124,9 @@ impl Template {
                     continue 'outer;
                 }
             }
+
+            // Change `$$` to `|`, to use Tera filters
+            let path_str = path_str.replace("$$", "|");
 
             let tpl = Tera::one_off(&path_str, &context, false)
                 .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
@@ -237,5 +244,15 @@ mod tests {
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn can_generate_handling_slugify() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("examples/slugify", None).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("template.toml").exists());
+        assert!(dir.path().join("hello.md").exists());
     }
 }
