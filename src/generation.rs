@@ -13,7 +13,6 @@ use walkdir::WalkDir;
 use crate::definition::TemplateDefinition;
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
-use slug::slugify;
 
 /// The current template being generated
 #[derive(Debug, PartialEq)]
@@ -62,6 +61,16 @@ impl Template {
         Template { path: buf }
     }
 
+    fn render_template(&self, content: &str, context: &Context, path: Option<PathBuf>) -> Result<String> {
+        let mut tera = Tera::default();
+
+        let content = content.replace("$$", "|");
+
+        tera.add_raw_template("one_off", content.as_str())
+            .and_then(|_| tera.render("one_off", context))
+            .map_err(|err| new_error(ErrorKind::Tera { err, path }))
+    }
+
     /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
         // Get the variables from the user first
@@ -108,9 +117,6 @@ impl Template {
             })
             .filter_map(|e| e.ok());
 
-        // Register the `slug` filter
-        Tera::default().register_filter("slugify", |value, _| slugify(value));
-
         'outer: for entry in walker {
             // Skip root folder and the template.toml
             if entry.path() == self.path || entry.path() == conf_path {
@@ -125,11 +131,7 @@ impl Template {
                 }
             }
 
-            // Change `$$` to `|`, to use Tera filters
-            let path_str = path_str.replace("$$", "|");
-
-            let tpl = Tera::one_off(&path_str, &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
+            let tpl = self.render_template(&path_str, &context, None)?;
 
             let real_path = output_dir.join(Path::new(&tpl));
 
@@ -152,10 +154,9 @@ impl Template {
                 continue;
             }
 
-            let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| {
-                    new_error(ErrorKind::Tera { err, path: Some(entry.path().to_path_buf()) })
-                })?;
+            let contents = self.render_template(&str::from_utf8(&buffer).unwrap(),
+                                                &context, Some(entry.path().to_path_buf()))?;
+
             write_file(&real_path, &contents)?;
         }
 
@@ -163,8 +164,7 @@ impl Template {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
-                        let actual_path = Tera::one_off(&p, &context, false)
-                            .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
+                        let actual_path = self.render_template(&p, &context, None)?;
                         let path_to_delete = output_dir.join(actual_path);
                         if !path_to_delete.exists() {
                             continue;
