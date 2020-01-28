@@ -64,9 +64,7 @@ impl Template {
     fn render_template(&self, content: &str, context: &Context, path: Option<PathBuf>) -> Result<String> {
         let mut tera = Tera::default();
 
-        let content = content.replace("$$", "|");
-
-        tera.add_raw_template("one_off", content.as_str())
+        tera.add_raw_template("one_off", content)
             .and_then(|_| tera.render("one_off", context))
             .map_err(|err| new_error(ErrorKind::Tera { err, path }))
     }
@@ -130,6 +128,8 @@ impl Template {
                     continue 'outer;
                 }
             }
+
+            let path_str = path_str.replace("$$", "|");
 
             let tpl = self.render_template(&path_str, &context, None)?;
 
