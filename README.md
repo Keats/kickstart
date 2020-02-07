@@ -33,8 +33,12 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 
 The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
 
-Lastly, Windows does not allow `|` in file paths so if you want your template to be cross-platform make sure to not use
-filters in directories/filenames.
+[builtin]: https://tera.netlify.com/docs/#built-in-filters
+
+Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
+by using the `$$` separator instead.
+
+Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories.
 
 ## Try it out
 

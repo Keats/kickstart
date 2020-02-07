@@ -61,6 +61,14 @@ impl Template {
         Template { path: buf }
     }
 
+    fn render_template(&self, content: &str, context: &Context, path: Option<PathBuf>) -> Result<String> {
+        let mut tera = Tera::default();
+
+        tera.add_raw_template("one_off", content)
+            .and_then(|_| tera.render("one_off", context))
+            .map_err(|err| new_error(ErrorKind::Tera { err, path }))
+    }
+
     /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
         // Get the variables from the user first
@@ -121,8 +129,9 @@ impl Template {
                 }
             }
 
-            let tpl = Tera::one_off(&path_str, &context, false)
-                .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
+            let path_str = path_str.replace("$$", "|");
+
+            let tpl = self.render_template(&path_str, &context, None)?;
 
             let real_path = output_dir.join(Path::new(&tpl));
 
@@ -145,10 +154,9 @@ impl Template {
                 continue;
             }
 
-            let contents = Tera::one_off(&str::from_utf8(&buffer).unwrap(), &context, false)
-                .map_err(|err| {
-                    new_error(ErrorKind::Tera { err, path: Some(entry.path().to_path_buf()) })
-                })?;
+            let contents = self.render_template(&str::from_utf8(&buffer).unwrap(),
+                                                &context, Some(entry.path().to_path_buf()))?;
+
             write_file(&real_path, &contents)?;
         }
 
@@ -156,8 +164,7 @@ impl Template {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
-                        let actual_path = Tera::one_off(&p, &context, false)
-                            .map_err(|err| new_error(ErrorKind::Tera { err, path: None }))?;
+                        let actual_path = self.render_template(&p, &context, None)?;
                         let path_to_delete = output_dir.join(actual_path);
                         if !path_to_delete.exists() {
                             continue;
@@ -237,5 +244,15 @@ mod tests {
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn can_generate_handling_slugify() {
+        let dir = tempdir().unwrap();
+        let tpl = Template::from_input("examples/slugify", None).unwrap();
+        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        assert!(res.is_ok());
+        assert!(!dir.path().join("template.toml").exists());
+        assert!(dir.path().join("hello.md").exists());
     }
 }

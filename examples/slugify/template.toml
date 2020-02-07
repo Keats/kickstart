@@ -1,0 +1,8 @@
+name = "Slugify"
+description = "A template demonstrating the slugify feature"
+kickstart_version = 1
+
+[[variables]]
+name = "title"
+default = "Hello"
+prompt = "Give a title to your article?"
