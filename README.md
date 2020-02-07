@@ -184,6 +184,10 @@ And three more optional fields:
 
 ## Changelog
 
+### 0.2.1 (2020-02-07)
+
+- Allow using `$$` for filters in filenames/directories
+
 ### 0.2.0 (2020-01-09)
 
 - Update all dependencies
