@@ -38,7 +38,7 @@ The main drawback compared to cookiecutter is the lack of hook scripts support, 
 Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
 by using the `$$` separator instead.
 
-Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories.
+Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
 
 ## Try it out
 
