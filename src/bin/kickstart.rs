@@ -1,9 +1,10 @@
-use std::env;
+use std::{collections::HashMap, env};
 use std::error::Error;
 use std::path::Path;
 
 use clap::{crate_authors, crate_description, crate_version, App, AppSettings, Arg, SubCommand};
 
+use kickstart::definition::Input;
 use kickstart::generation::Template;
 use kickstart::terminal;
 use kickstart::validate::validate_file;
@@ -88,7 +89,13 @@ fn main() {
                 Err(e) => bail(&e),
             };
 
-            match template.generate(&output_dir, no_input) {
+            let input = if no_input {
+                Input::ArgumentOrDefault(HashMap::new())
+            } else {
+                Input::Interactive
+            };
+            
+            match template.generate(&output_dir, input) {
                 Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
                 Err(e) => bail(&e),
             };

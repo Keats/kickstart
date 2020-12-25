@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use toml::Value;
 
+use crate::interpret::{interpret_bool, interpret_choices, interpret_integer, interpret_string};
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 
@@ -74,11 +75,16 @@ pub struct TemplateDefinition {
     pub variables: Vec<Variable>,
 }
 
+pub enum Input {
+    ArgumentOrDefault(HashMap<String, String>),
+    Interactive,
+}
+
 impl TemplateDefinition {
     /// Ask all the questions of that template and return the answers.
-    /// If `no_input` is `true`, it will automatically pick the default without
-    /// prompting the user
-    pub fn ask_questions(&self, no_input: bool) -> Result<HashMap<String, Value>> {
+    /// If `input` is `ArgumentOrDefault`, it will automatically pick the 
+    /// argument if exists or default without prompting the user
+    pub fn ask_questions(&self, input: Input) -> Result<HashMap<String, Value>> {
         // Tera context doesn't expose a way to get value from a context
         // so we store them in another hashmap
         let mut vals = HashMap::new();
@@ -97,8 +103,12 @@ impl TemplateDefinition {
             }
 
             if let Some(ref choices) = var.choices {
-                let res = if no_input {
-                    var.default.clone()
+                let res = if let Input::ArgumentOrDefault(argument) = &input {
+                    if let Some(input) = argument.get(&var.name) {
+                        interpret_choices(input, &var.default, choices)?
+                    } else {
+                        var.default.clone()
+                    }
                 } else {
                     ask_choices(&var.prompt, &var.default, choices)?
                 };
@@ -108,13 +118,23 @@ impl TemplateDefinition {
 
             match &var.default {
                 Value::Boolean(b) => {
-                    let res = if no_input { *b } else { ask_bool(&var.prompt, *b)? };
+                    let res = if let Input::ArgumentOrDefault(argument) = &input {
+                        if let Some(input) = argument.get(&var.name) {
+                            interpret_bool(input, *b)?
+                        } else {
+                            *b                            
+                        }
+                    } else { ask_bool(&var.prompt, *b)? };
                     vals.insert(var.name.clone(), Value::Boolean(res));
                     continue;
                 }
                 Value::String(s) => {
-                    let res = if no_input {
-                        s.clone()
+                    let res = if let Input::ArgumentOrDefault(argument) = &input {
+                        if let Some(input) = argument.get(&var.name) {
+                            interpret_string(input, s, &var.validation)?
+                        } else {
+                            s.clone()
+                        }
                     } else {
                         ask_string(&var.prompt, &s, &var.validation)?
                     };
@@ -122,7 +142,13 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::Integer(i) => {
-                    let res = if no_input { *i } else { ask_integer(&var.prompt, *i)? };
+                    let res = if let Input::ArgumentOrDefault(argument) = &input { 
+                        if let Some(input) = argument.get(&var.name) {
+                            interpret_integer(input, *i)?
+                        } else {
+                            *i
+                        }
+                    } else { ask_integer(&var.prompt, *i)? };
                     vals.insert(var.name.clone(), Value::Integer(res));
                     continue;
                 }
@@ -171,7 +197,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.ask_questions(Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
     }
 
@@ -206,7 +232,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.ask_questions(Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
@@ -248,7 +274,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 4);
-        let res = tpl.ask_questions(true);
+        let res = tpl.ask_questions(Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));

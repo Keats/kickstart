@@ -6,7 +6,7 @@
 //! See the [kickstart binary](https://github.com/Keats/kickstart/blob/master/src/bin/kickstart.rs)
 //! for an example on how to use it.
 
-mod definition;
+pub mod definition;
 pub mod errors;
 pub mod generation;
 pub mod interpret;

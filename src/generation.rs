@@ -1,4 +1,4 @@
-use std::env;
+use std::{collections::HashMap, env};
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -11,6 +11,7 @@ use toml;
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
+use crate::definition::Input;
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
 
@@ -70,7 +71,7 @@ impl Template {
     }
 
     /// Generate the template at the given output directory
-    pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
+    pub fn generate(&self, output_dir: &PathBuf, input: Input) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -80,7 +81,7 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
-        let variables = definition.ask_questions(no_input)?;
+        let variables = definition.ask_questions(input)?;
         let mut context = Context::new();
         for (key, val) in &variables {
             context.insert(key, val);
@@ -197,7 +198,7 @@ mod tests {
     fn can_generate_from_local_path() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/complex", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -207,7 +208,7 @@ mod tests {
     fn can_generate_from_local_path_with_directory() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/with-directory", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         assert!(dir.path().join("Hello").join("Howdy.py").exists());
     }
@@ -216,7 +217,7 @@ mod tests {
     fn can_generate_from_local_path_with_subdir() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -226,7 +227,7 @@ mod tests {
     fn can_generate_from_remote_repo() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         println!("{:?}", res);
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
@@ -239,7 +240,7 @@ mod tests {
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         println!("{:?}", res);
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
@@ -250,7 +251,7 @@ mod tests {
     fn can_generate_handling_slugify() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/slugify", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(&dir.path().to_path_buf(), Input::ArgumentOrDefault(HashMap::new()));
         assert!(res.is_ok());
         assert!(!dir.path().join("template.toml").exists());
         assert!(dir.path().join("hello.md").exists());
