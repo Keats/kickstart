@@ -27,6 +27,9 @@ pub struct Error {
 #[derive(Debug)]
 pub enum ErrorKind {
     MissingTemplateDefinition,
+    InvalidInput {
+        msg: String,
+    },
     InvalidTemplate,
     UnreadableStdin,
     /// An error while cloning a repository
@@ -68,6 +71,7 @@ impl StdError for Error {
         match self.kind {
             ErrorKind::Io { ref err, .. } => err.description(),
             ErrorKind::Tera { ref err, .. } => err.description(),
+            ErrorKind::InvalidInput { ref msg, .. } => msg,
             ErrorKind::InvalidTemplate => "invalid template",
             ErrorKind::MissingTemplateDefinition => "missing template.toml",
             ErrorKind::UnreadableStdin => "couldn't read from stdin",
@@ -83,6 +87,7 @@ impl StdError for Error {
             ErrorKind::Tera { ref err, .. } => Some(err),
             ErrorKind::Toml { ref err } => Some(err),
             ErrorKind::Git { ref err } => Some(err),
+            ErrorKind::InvalidInput { ref msg, .. } => None,
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
@@ -117,6 +122,7 @@ impl fmt::Display for Error {
             ErrorKind::Toml { ref err } => write!(f, "Invalid TOML: {}", err),
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
+            ErrorKind::InvalidInput { ref msg } => write!(f, "{}", msg),
             ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),
             _ => unreachable!(),
         }

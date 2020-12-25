@@ -1,9 +1,9 @@
 use std::io::{self, BufRead, Write};
 
-use regex::Regex;
 use toml;
 
 use crate::errors::{new_error, ErrorKind, Result};
+use crate::interpret;
 use crate::terminal;
 
 /// Wait for user input and return what they typed
@@ -20,12 +20,10 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
     let _ = io::stdout().flush();
     let input = read_line()?;
 
-    let res = match &*input {
-        "y" | "Y" | "yes" | "YES" | "true" => true,
-        "n" | "N" | "no" | "NO" | "false" => false,
-        "" => default,
-        _ => {
-            terminal::error(&format!("Invalid choice: '{}'\n", input));
+    let res = match interpret::interpret_bool(&input, default) {
+        Ok(x) => x,
+        Err(e) => {
+            terminal::error(&format!("{}", e));
             ask_bool(prompt, default)?
         }
     };
@@ -39,20 +37,11 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
     let _ = io::stdout().flush();
     let input = read_line()?;
 
-    let res = match &*input {
-        "" => default.to_string(),
-        _ => {
-            if let Some(ref pattern) = validation {
-                let re = Regex::new(pattern).unwrap();
-                if re.is_match(&input) {
-                    input
-                } else {
-                    terminal::error(&format!("The value needs to pass the regex: {}\n", pattern));
-                    ask_string(prompt, default, validation)?
-                }
-            } else {
-                input
-            }
+    let res = match interpret::interpret_string(&input, default, validation) {
+        Ok(x) => x,
+        Err(e) => {
+            terminal::error(&format!("{}", e));
+            ask_string(prompt, default, validation)?
         }
     };
 
@@ -65,15 +54,12 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
     let _ = io::stdout().flush();
     let input = read_line()?;
 
-    let res = match &*input {
-        "" => default,
-        _ => match input.parse::<i64>() {
-            Ok(i) => i,
-            Err(_) => {
-                terminal::error(&format!("Invalid integer: '{}'\n", input));
-                ask_integer(prompt, default)?
-            }
-        },
+    let res = match interpret::interpret_integer(&input, default) {
+        Ok(x) => x,
+        Err(e) => {
+            terminal::error(&format!("{}", e));
+            ask_integer(prompt, default)?
+        }
     };
 
     Ok(res)
@@ -107,20 +93,11 @@ pub fn ask_choices(
     let _ = io::stdout().flush();
     let input = read_line()?;
 
-    let res = match &*input {
-        "" => default.clone(),
-        _ => {
-            if let Ok(num) = input.parse::<usize>() {
-                if num > choices.len() {
-                    terminal::error(&format!("Invalid choice: '{}'\n", input));
-                    ask_choices(prompt, default, choices)?
-                } else {
-                    choices[num - 1].clone()
-                }
-            } else {
-                terminal::error(&format!("Invalid choice: '{}'\n", input));
-                ask_choices(prompt, default, choices)?
-            }
+    let res = match interpret::interpret_choices(&input, default, choices) {
+        Ok(x) => x,
+        Err(e) => {
+            terminal::error(&format!("{}", e));
+            ask_choices(prompt, default, choices)?
         }
     };
 

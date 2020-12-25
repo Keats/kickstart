@@ -9,6 +9,7 @@
 mod definition;
 pub mod errors;
 pub mod generation;
+pub mod interpret;
 mod prompt;
 pub mod terminal;
 mod utils;
