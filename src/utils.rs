@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use memchr::memchr;
 
-use crate::errors::{new_error, ErrorKind, Result};
+use crate::errors::{map_io_err, Result};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -13,29 +13,24 @@ pub enum Source {
 }
 
 pub fn read_file(p: &Path) -> Result<String> {
-    let mut f = match File::open(p) {
-        Ok(f) => f,
-        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() })),
-    };
+    let mut f = map_io_err(File::open(p), p)?;
 
     let mut contents = String::new();
-    match f.read_to_string(&mut contents) {
-        Ok(_) => (),
-        Err(err) => return Err(new_error(ErrorKind::Io { err, path: p.to_path_buf() })),
-    };
+    map_io_err(f.read_to_string(&mut contents), p)?;
 
     Ok(contents)
 }
 
 pub fn write_file(p: &Path, contents: &str) -> Result<()> {
-    let mut f = File::create(p)?;
-    f.write_all(contents.as_bytes())?;
+    let mut f = map_io_err(File::create(p), p)?;
+    map_io_err(f.write_all(contents.as_bytes()), p)?;
+
     Ok(())
 }
 
 pub fn create_directory(path: &Path) -> Result<()> {
     if !path.exists() {
-        create_dir_all(path)?;
+        map_io_err(create_dir_all(path), path)?;
     }
 
     Ok(())

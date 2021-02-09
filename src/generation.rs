@@ -11,7 +11,7 @@ use toml;
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
-use crate::errors::{new_error, ErrorKind, Result};
+use crate::errors::{map_io_err, new_error, ErrorKind, Result};
 use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
 
 /// The current template being generated
@@ -148,9 +148,7 @@ impl Template {
             let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
 
             if no_render || is_binary(&buffer) {
-                fs::copy(&entry.path(), &real_path).map_err(|err| {
-                    new_error(ErrorKind::Io { err, path: entry.path().to_path_buf() })
-                })?;
+                map_io_err(fs::copy(&entry.path(), &real_path), entry.path())?;
                 continue;
             }
 
@@ -170,13 +168,9 @@ impl Template {
                             continue;
                         }
                         if path_to_delete.is_dir() {
-                            fs::remove_dir_all(&path_to_delete).map_err(|err| {
-                                new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() })
-                            })?;
+                            map_io_err(fs::remove_dir_all(&path_to_delete), &path_to_delete)?;
                         } else {
-                            fs::remove_file(&path_to_delete).map_err(|err| {
-                                new_error(ErrorKind::Io { err, path: path_to_delete.to_path_buf() })
-                            })?;
+                            map_io_err(fs::remove_file(&path_to_delete), &path_to_delete)?;
                         }
                     }
                 }
