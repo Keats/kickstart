@@ -1,7 +1,7 @@
 use std::error::Error as StdError;
 use std::fmt;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::result;
 
 use tera;
@@ -10,6 +10,13 @@ use toml;
 /// A crate private constructor for `Error`.
 pub(crate) fn new_error(kind: ErrorKind) -> Error {
     Error { kind, source: None }
+}
+
+/// Map an IO error, providing a path for context.
+pub(crate) fn map_io_err<T>(err: io::Result<T>, path: &Path) -> Result<T> {
+    err.map_err(|err| {
+        new_error(ErrorKind::Io { err, path: path.to_path_buf() })
+    })
 }
 
 /// A type alias for `Result<T, kickstart::Error>`.
