@@ -6,7 +6,7 @@ use std::process::Command;
 use std::str;
 
 use glob::Pattern;
-use tera::{Context};
+use tera::{Context, Tera};
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
