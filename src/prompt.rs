@@ -1,8 +1,8 @@
 use std::io::{self, BufRead, Write};
 
-use regex::Regex;
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::terminal;
+use regex::Regex;
 
 /// Wait for user input and return what they typed
 fn read_line() -> Result<String> {

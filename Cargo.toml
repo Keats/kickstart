@@ -1,25 +1,25 @@
 [package]
+authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
+description = "A simple way to get started with a project by scaffolding from a template powered by the tera engine"
+edition = "2018"
+keywords = ["rust", "tera", "scaffolding", "templating"]
+license = "MIT"
 name = "kickstart"
 version = "0.2.1"
-description = "A simple way to get started with a project by scaffolding from a template powered by the tera engine"
-keywords = ["rust", "tera", "scaffolding", "templating"]
-authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
-license = "MIT"
-edition = "2018"
 
 [dependencies]
 clap = "2"
-tera = "1"
-walkdir = "2"
-serde = { version = "1", features = ["derive"] }
-toml = "0.5"
-memchr = "2"
 glob = "0.3"
+memchr = "2"
 regex = "1"
+serde = {version = "1", features = ["derive"]}
+tera = "1"
 term = "0.7"
+toml = "0.5"
+walkdir = "2"
 
 [dev-dependencies]
 tempfile = "3"
 
 [badges]
-maintenance = { status = "actively-developed" }
+maintenance = {status = "actively-developed"}
