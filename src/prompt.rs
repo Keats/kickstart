@@ -1,8 +1,6 @@
 use std::io::{self, BufRead, Write};
 
 use regex::Regex;
-use toml;
-
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::terminal;
 
