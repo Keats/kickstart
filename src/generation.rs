@@ -60,7 +60,7 @@ impl Template {
         Template { path: buf }
     }
 
-    fn render_template(
+    fn _render_template(
         &self,
         content: &str,
         context: &Context,
@@ -158,7 +158,7 @@ impl Template {
                 continue;
             }
 
-            let contents = self.render_template(
+            let contents = render_one_off_template(
                 &str::from_utf8(&buffer).unwrap(),
                 &context,
                 Some(entry.path().to_path_buf()),

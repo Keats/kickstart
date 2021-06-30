@@ -1,9 +1,9 @@
 [package]
+name = "kickstart"
+description = "A simple way to get started with a project by scaffolding from a template powered by the tera engine"
 authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
-description = "A simple way to get started with a project by scaffolding from a template powered by the Tera engine"
 edition = "2018"
 license = "MIT"
-name = "kickstart"
 keywords = [
     "rust",
     "tera",
