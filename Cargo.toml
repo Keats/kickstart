@@ -1,10 +1,17 @@
 [package]
-name = "kickstart"
-description = "A simple way to get started with a project by scaffolding from a template powered by the tera engine"
 authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
+description = "A simple way to get started with a project by scaffolding from a template powered by the tera engine"
 edition = "2018"
-keywords = ["tera", "scaffolding", "templating", "generator", "boilerplate"]
 license = "MIT"
+name = "kickstart"
+keywords = [
+    "rust",
+    "tera",
+    "scaffolding",
+    "templating",
+    "generator",
+    "boilerplate",
+]
 version = "0.3.0"
 
 [dependencies]
