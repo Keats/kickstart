@@ -1,0 +1,66 @@
+# This workflow runs on every push and checks whether everything looks good
+
+name: Quick check
+
+on:
+  push:
+    tags-ignore:
+      - v*
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+    
+jobs:
+  quick_check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt
+
+      - uses: actions/checkout@v2
+
+      - name: Cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  quick_check-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Rust stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy
+
+      - uses: actions/checkout@v2
+
+      - name: Cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+  quick_check-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+      - name: Cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
