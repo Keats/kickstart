@@ -60,6 +60,19 @@ impl Template {
         Template { path: buf }
     }
 
+    fn render_template(
+        &self,
+        content: &str,
+        context: &Context,
+        path: Option<PathBuf>,
+    ) -> Result<String> {
+        let mut tera = Tera::default();
+
+        tera.add_raw_template("one_off", content)
+            .and_then(|_| tera.render("one_off", context))
+            .map_err(|err| new_error(ErrorKind::Tera { err, path }))
+    }
+
     /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &Path, no_input: bool) -> Result<()> {
         // Get the variables from the user first
@@ -145,7 +158,7 @@ impl Template {
                 continue;
             }
 
-            let contents = render_one_off_template(
+            let contents = self.render_template(
                 &str::from_utf8(&buffer).unwrap(),
                 &context,
                 Some(entry.path().to_path_buf()),
