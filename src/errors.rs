@@ -14,9 +14,7 @@ pub(crate) fn new_error(kind: ErrorKind) -> Error {
 
 /// Map an IO error, providing a path for context.
 pub(crate) fn map_io_err<T>(err: io::Result<T>, path: &Path) -> Result<T> {
-    err.map_err(|err| {
-        new_error(ErrorKind::Io { err, path: path.to_path_buf() })
-    })
+    err.map_err(|err| new_error(ErrorKind::Io { err, path: path.to_path_buf() }))
 }
 
 /// A type alias for `Result<T, kickstart::Error>`.
@@ -32,6 +30,7 @@ pub struct Error {
 
 /// The specific type of an error.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorKind {
     MissingTemplateDefinition,
     InvalidTemplate,
@@ -55,13 +54,6 @@ pub enum ErrorKind {
     Toml {
         err: toml::de::Error,
     },
-    /// Hints that destructuring should not be exhaustive.
-    ///
-    /// This enum may grow additional variants, so this makes sure clients
-    /// don't count on exhaustive matching. (Otherwise, adding a new variant
-    /// could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl From<io::Error> for Error {
@@ -71,19 +63,6 @@ impl From<io::Error> for Error {
 }
 
 impl StdError for Error {
-    fn description(&self) -> &str {
-        match self.kind {
-            ErrorKind::Io { ref err, .. } => err.description(),
-            ErrorKind::Tera { ref err, .. } => err.description(),
-            ErrorKind::InvalidTemplate => "invalid template",
-            ErrorKind::MissingTemplateDefinition => "missing template.toml",
-            ErrorKind::UnreadableStdin => "couldn't read from stdin",
-            ErrorKind::Git { ref err } => err.description(),
-            ErrorKind::Toml { ref err } => err.description(),
-            _ => unreachable!(),
-        }
-    }
-
     fn cause(&self) -> Option<&dyn StdError> {
         match self.kind {
             ErrorKind::Io { ref err, .. } => Some(err),
@@ -93,12 +72,11 @@ impl StdError for Error {
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
-            _ => unreachable!(),
         }
     }
 
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        let mut source = self.source.as_ref().map(|c| &**c);
+        let mut source = self.source.as_deref();
         if source.is_none() {
             if let ErrorKind::Tera { ref err, .. } = self.kind {
                 source = err.source();
@@ -125,7 +103,6 @@ impl fmt::Display for Error {
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
             ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),
-            _ => unreachable!(),
         }
     }
 }

@@ -38,7 +38,7 @@ impl Template {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
         println!("Tmp dir: {:?}", tmp);
-        tmp.push(remote.split('/').last().unwrap_or_else(|| "kickstart"));
+        tmp.push(remote.split('/').last().unwrap_or("kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }
@@ -53,7 +53,7 @@ impl Template {
         Ok(Template::from_local(&tmp, sub_dir))
     }
 
-    pub fn from_local(path: &PathBuf, sub_dir: Option<&str>) -> Template {
+    pub fn from_local(path: &Path, sub_dir: Option<&str>) -> Template {
         let mut buf = path.to_path_buf();
         if let Some(dir) = sub_dir {
             buf.push(dir);
@@ -61,7 +61,12 @@ impl Template {
         Template { path: buf }
     }
 
-    fn render_template(&self, content: &str, context: &Context, path: Option<PathBuf>) -> Result<String> {
+    fn render_template(
+        &self,
+        content: &str,
+        context: &Context,
+        path: Option<PathBuf>,
+    ) -> Result<String> {
         let mut tera = Tera::default();
 
         tera.add_raw_template("one_off", content)
@@ -70,7 +75,7 @@ impl Template {
     }
 
     /// Generate the template at the given output directory
-    pub fn generate(&self, output_dir: &PathBuf, no_input: bool) -> Result<()> {
+    pub fn generate(&self, output_dir: &Path, no_input: bool) -> Result<()> {
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -152,8 +157,11 @@ impl Template {
                 continue;
             }
 
-            let contents = self.render_template(&str::from_utf8(&buffer).unwrap(),
-                                                &context, Some(entry.path().to_path_buf()))?;
+            let contents = self.render_template(
+                &str::from_utf8(&buffer).unwrap(),
+                &context,
+                Some(entry.path().to_path_buf()),
+            )?;
 
             write_file(&real_path, &contents)?;
         }
