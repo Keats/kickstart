@@ -4,9 +4,6 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::result;
 
-use tera;
-use toml;
-
 /// A crate private constructor for `Error`.
 pub(crate) fn new_error(kind: ErrorKind) -> Error {
     Error { kind, source: None }

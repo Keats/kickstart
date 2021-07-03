@@ -7,7 +7,6 @@ use std::str;
 
 use glob::Pattern;
 use tera::{Context, Tera};
-use toml;
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
