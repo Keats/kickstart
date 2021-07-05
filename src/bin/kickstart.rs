@@ -70,7 +70,7 @@ fn main() {
                 }
                 ::std::process::exit(1);
             } else {
-                terminal::success("\nThe template.toml file is valid!\n");
+                terminal::success("The template.toml file is valid!\n");
             }
         }
         _ => {
