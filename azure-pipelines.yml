@@ -17,10 +17,10 @@ stages:
               imageName: 'macos-10.14'
               rustup_toolchain: stable
             linux-stable:
-              imageName: 'ubuntu-16.04'
+              imageName: 'ubuntu-latest'
               rustup_toolchain: stable
             linux-msrv:
-              imageName: 'ubuntu-16.04'
+              imageName: 'ubuntu-latest'
               rustup_toolchain: 1.40.0
         pool:
           vmImage: $(imageName)
@@ -60,7 +60,7 @@ stages:
               rustup_toolchain: stable
               target: 'x86_64-apple-darwin'
             linux-stable:
-              imageName: 'ubuntu-16.04'
+              imageName: 'ubuntu-latest'
               rustup_toolchain: stable
               target: 'x86_64-unknown-linux-gnu'
         pool:
