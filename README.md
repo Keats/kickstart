@@ -49,9 +49,6 @@ $ kickstart examples/complex -o Hello
 # Anywhere
 $ kickstart https://github.com/Keats/kickstart -s examples/super-basic
 $ kickstart https://github.com/Keats/kickstart-sample -o sample
-# Additionally, kickstart supports git URL shorthands (see [#19](https://github.com/Keats/kickstart/issues/19))
-# Here, gl maps to `https://gitlab.com/`
-$ kickstart gl:YourNick/template
 ```
 
 ## Creating your own template
@@ -183,6 +180,10 @@ And three more optional fields:
 - [Rust CLI application](https://github.com/Keats/rust-cli-template)
 
 ## Changelog
+
+### 0.3.0 (unreleased)
+
+- Update dependencies
 
 ### 0.2.1 (2020-02-07)
 

@@ -1,8 +1,6 @@
 use std::fmt;
 use std::io::prelude::*;
 
-use term;
-
 /// Show an error message
 pub fn error(message: &str) {
     if let Some(mut t) = term::stderr() {

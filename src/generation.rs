@@ -7,7 +7,6 @@ use std::str;
 
 use glob::Pattern;
 use tera::{Context, Tera};
-use toml;
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
@@ -47,7 +46,7 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .args(&["clone", remote, &format!("{}", tmp.display())])
+            .args(&["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
         Ok(Template::from_local(&tmp, sub_dir))
@@ -92,6 +91,7 @@ impl Template {
         }
 
         if !output_dir.exists() {
+            println!("Creating {:?}", output_dir);
             create_directory(&output_dir)?;
         }
 
@@ -127,6 +127,9 @@ impl Template {
             }
 
             let path = entry.path().strip_prefix(&self.path).unwrap();
+            if path.starts_with(output_dir) {
+                continue;
+            }
             let path_str = format!("{}", path.display());
             for ignored in &definition.ignore {
                 if ignored == &path_str || path_str.starts_with(ignored) {
@@ -135,9 +138,7 @@ impl Template {
             }
 
             let path_str = path_str.replace("$$", "|");
-
             let tpl = self.render_template(&path_str, &context, None)?;
-
             let real_path = output_dir.join(Path::new(&tpl));
 
             if entry.path().is_dir() {
