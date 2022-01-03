@@ -114,7 +114,12 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::String(s) => {
-                    let default_value = has_template_variables(&s, &vals);
+                    let variables = has_template_variables(&s, &vals);
+                    let default_value = match variables {
+                        Some(variables) => replace_with_previous_responses(
+                            variables, &vals, &s),
+                        None => s.clone(),
+                    };
 
                     let res = if no_input {
                         default_value
@@ -138,23 +143,12 @@ impl TemplateDefinition {
     }
 }
 
-fn has_template_variables(s: &String, _already_vars: &HashMap<String, Value>) -> String {
-    let mut cloned_str = s.clone();
-
-    let re = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
-    let variables: HashSet<&str> = re
-        .captures_iter(s)
-        .filter_map(|c| c.get(0))
-        .map(|m| m.as_str()).collect();
-    
-    if variables.len() == 0 {
-        return cloned_str;
-    }
+fn replace_with_previous_responses(variables: HashSet<&str>, previous_responses: &HashMap<String, Value>, to_replace: &String) -> String {
+    let mut cloned_str = to_replace.clone();
 
     for variable in variables.iter() {
         let var_without_braces = variable.trim_start_matches("{{").trim_end_matches("}}");
-        if let Some(value) = _already_vars.get(var_without_braces) {
-            println!("{:?} -> {:?}", var_without_braces, value);
+        if let Some(value) = previous_responses.get(var_without_braces) {
             cloned_str = match value {
                 Value::String(v) => str::replace(&cloned_str, variable, &v),
                 Value::Integer(v) => str::replace(&cloned_str, variable, &v.to_string()),
@@ -166,6 +160,19 @@ fn has_template_variables(s: &String, _already_vars: &HashMap<String, Value>) ->
     }
 
     cloned_str
+}
+
+fn has_template_variables<'a>(s: &'a String, _already_vars: &HashMap<String, Value>) -> Option<HashSet<&'a str>> {
+    let re = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
+    let variables: HashSet<&'a str> = re
+        .captures_iter(s)
+        .filter_map(|c| c.get(0))
+        .map(|m| m.as_str()).collect();
+
+    match variables.len() {
+        0 => None,
+        _ => Some(variables)
+    }
 }
 
 #[cfg(test)]
