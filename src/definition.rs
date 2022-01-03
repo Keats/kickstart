@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use regex::Regex;
 use serde::Deserialize;
 use toml::Value;
 
@@ -113,11 +114,14 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::String(s) => {
+                    let default_value = has_template_variables(&s, &vals);
+
                     let res = if no_input {
-                        s.clone()
+                        default_value
                     } else {
-                        ask_string(&var.prompt, &s, &var.validation)?
+                        ask_string(&var.prompt, &default_value, &var.validation)?
                     };
+
                     vals.insert(var.name.clone(), Value::String(res));
                     continue;
                 }
@@ -132,6 +136,36 @@ impl TemplateDefinition {
 
         Ok(vals)
     }
+}
+
+fn has_template_variables(s: &String, _already_vars: &HashMap<String, Value>) -> String {
+    let mut cloned_str = s.clone();
+
+    let re = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
+    let variables: HashSet<&str> = re
+        .captures_iter(s)
+        .filter_map(|c| c.get(0))
+        .map(|m| m.as_str()).collect();
+    
+    if variables.len() == 0 {
+        return cloned_str;
+    }
+
+    for variable in variables.iter() {
+        let var_without_braces = variable.trim_start_matches("{{").trim_end_matches("}}");
+        if let Some(value) = _already_vars.get(var_without_braces) {
+            println!("{:?} -> {:?}", var_without_braces, value);
+            cloned_str = match value {
+                Value::String(v) => str::replace(&cloned_str, variable, &v),
+                Value::Integer(v) => str::replace(&cloned_str, variable, &v.to_string()),
+                Value::Float(v) => str::replace(&cloned_str, variable, &v.to_string()),
+                Value::Boolean(v) => str::replace(&cloned_str, variable, &v.to_string()),
+                _ => cloned_str
+            }
+        }
+    }
+
+    cloned_str
 }
 
 #[cfg(test)]

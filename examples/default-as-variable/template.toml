@@ -1,0 +1,19 @@
+name = "Super basic"
+description = "A very simple template"
+kickstart_version = 1
+
+[[variables]]
+name = "first_project"
+default = "first"
+prompt = "Directory name?"
+
+[[variables]]
+name = "second_project"
+default = "second"
+prompt = "Directory name?"
+
+[[variables]]
+name = "manifest"
+default = "{{first_project}}-{{second_project}}-manifest.md"
+prompt = "Manifest name?"
+
