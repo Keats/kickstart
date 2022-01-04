@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
 use toml::Value;
@@ -163,8 +164,11 @@ fn replace_with_previous_responses(variables: HashSet<&str>, previous_responses:
 }
 
 fn has_template_variables<'a>(s: &'a String, _already_vars: &HashMap<String, Value>) -> Option<HashSet<&'a str>> {
-    let re = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
-    let variables: HashSet<&'a str> = re
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
+    }
+
+    let variables: HashSet<&'a str> = RE
         .captures_iter(s)
         .filter_map(|c| c.get(0))
         .map(|m| m.as_str()).collect();
