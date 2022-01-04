@@ -1,4 +1,4 @@
-name = "Super basic"
+name = "default_from_variable"
 description = "A very simple template"
 kickstart_version = 1
 
