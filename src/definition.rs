@@ -1,12 +1,14 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, Match};
 use serde::Deserialize;
+use tera::{Context};
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
+use crate::utils::{render_one_off_template};
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -115,12 +117,24 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::String(s) => {
-                    let variables = has_template_variables(&s, &vals);
-                    let default_value = match variables {
-                        Some(variables) => replace_with_previous_responses(
-                            variables, &vals, &s),
-                        None => s.clone(),
+                    let contains_template = has_template_variables(&s);
+                    let default_value = match contains_template {
+                        Some(_) => {
+                            let mut context = Context::new();
+                            for (key, val) in &vals {
+                                context.insert(key, val);
+                            }
+
+                            let rendered_default = render_one_off_template(&s, &context, None);
+                            match rendered_default {
+                                Err(e) => return Err(e),
+                                Ok(v ) => v,
+                            }
+                        },
+                        None => s.clone(),                 
                     };
+
+                    println!("{:?}", default_value);
 
                     let res = if no_input {
                         default_value
@@ -144,39 +158,12 @@ impl TemplateDefinition {
     }
 }
 
-fn replace_with_previous_responses(variables: HashSet<&str>, previous_responses: &HashMap<String, Value>, to_replace: &String) -> String {
-    let mut cloned_str = to_replace.clone();
-
-    for variable in variables.iter() {
-        let var_without_braces = variable.trim_start_matches("{{").trim_end_matches("}}");
-        if let Some(value) = previous_responses.get(var_without_braces) {
-            cloned_str = match value {
-                Value::String(v) => str::replace(&cloned_str, variable, &v),
-                Value::Integer(v) => str::replace(&cloned_str, variable, &v.to_string()),
-                Value::Float(v) => str::replace(&cloned_str, variable, &v.to_string()),
-                Value::Boolean(v) => str::replace(&cloned_str, variable, &v.to_string()),
-                _ => cloned_str
-            }
-        }
-    }
-
-    cloned_str
-}
-
-fn has_template_variables<'a>(s: &'a String, _already_vars: &HashMap<String, Value>) -> Option<HashSet<&'a str>> {
+fn has_template_variables<'a>(s: &'a String) -> Option<Match> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
     }
 
-    let variables: HashSet<&'a str> = RE
-        .captures_iter(s)
-        .filter_map(|c| c.get(0))
-        .map(|m| m.as_str()).collect();
-
-    match variables.len() {
-        0 => None,
-        _ => Some(variables)
-    }
+    RE.find(s)
 }
 
 #[cfg(test)]

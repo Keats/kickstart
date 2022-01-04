@@ -3,8 +3,9 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use memchr::memchr;
+use tera::{Context, Tera};
 
-use crate::errors::{map_io_err, Result};
+use crate::errors::{map_io_err, new_error, Result, ErrorKind};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -45,6 +46,18 @@ pub fn get_source(input: &str) -> Source {
     } else {
         Source::Git(input.to_string())
     }
+}
+
+pub fn render_one_off_template(
+    content: &str,
+    context: &Context,
+    path: Option<PathBuf>,
+) -> Result<String> {
+    let mut tera = Tera::default();
+
+    tera.add_raw_template("one_off", content)
+        .and_then(|_| tera.render("one_off", context))
+        .map_err(|err| new_error(ErrorKind::Tera { err, path }))
 }
 
 /// Is the buffer from a binary file?

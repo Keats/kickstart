@@ -1,19 +1,25 @@
 name = "default_from_variable"
 description = "A very simple template"
 kickstart_version = 1
+directory = "{{directory_name}}"
+
+[[variables]]
+name = "directory_name"
+default = "Hello"
+prompt = "Directory name?"
 
 [[variables]]
 name = "first_project"
 default = "first"
-prompt = "Directory name?"
+prompt = "sub-directory name?"
 
 [[variables]]
 name = "second_project"
 default = "second"
-prompt = "Directory name?"
+prompt = "sub-diretory name?"
 
 [[variables]]
 name = "manifest"
-default = "{{first_project}}-{{second_project}}-manifest.md"
+default = "{{directory_name}}-{{first_project}}-{{second_project}}-manifest"
 prompt = "Manifest name?"
 
