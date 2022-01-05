@@ -1,6 +1,5 @@
 use std::collections::{HashMap};
 
-use lazy_static::lazy_static;
 use regex::{Regex, Match};
 use serde::Deserialize;
 use tera::{Context};
@@ -117,24 +116,20 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::String(s) => {
-                    let contains_template = has_template_variables(&s);
-                    let default_value = match contains_template {
-                        Some(_) => {
-                            let mut context = Context::new();
-                            for (key, val) in &vals {
-                                context.insert(key, val);
-                            }
+                    let default_value = if s.contains("{{") && s.contains("}}") {
+                        let mut context = Context::new();
+                        for (key, val) in &vals {
+                            context.insert(key, val);
+                        }
 
-                            let rendered_default = render_one_off_template(&s, &context, None);
-                            match rendered_default {
-                                Err(e) => return Err(e),
-                                Ok(v ) => v,
-                            }
-                        },
-                        None => s.clone(),                 
+                        let rendered_default = render_one_off_template(&s, &context, None);
+                        match rendered_default {
+                            Err(e) => return Err(e),
+                            Ok(v ) => v,
+                        }
+                    } else {
+                        s.clone()
                     };
-
-                    println!("{:?}", default_value);
 
                     let res = if no_input {
                         default_value
@@ -156,14 +151,6 @@ impl TemplateDefinition {
 
         Ok(vals)
     }
-}
-
-fn has_template_variables<'a>(s: &'a String) -> Option<Match> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\{\{(?:[a-zA-Z][0-9a-zA-Z_]*)\}\}").unwrap();
-    }
-
-    RE.find(s)
 }
 
 #[cfg(test)]

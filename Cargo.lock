@@ -282,7 +282,6 @@ version = "0.3.0"
 dependencies = [
  "clap",
  "glob",
- "lazy_static",
  "memchr",
  "regex",
  "serde",
