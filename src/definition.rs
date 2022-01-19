@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap};
 
+use regex::{Regex, Match};
 use serde::Deserialize;
+use tera::{Context};
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
+use crate::utils::{render_one_off_template};
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -113,11 +116,27 @@ impl TemplateDefinition {
                     continue;
                 }
                 Value::String(s) => {
-                    let res = if no_input {
-                        s.clone()
+                    let default_value = if s.contains("{{") && s.contains("}}") {
+                        let mut context = Context::new();
+                        for (key, val) in &vals {
+                            context.insert(key, val);
+                        }
+
+                        let rendered_default = render_one_off_template(&s, &context, None);
+                        match rendered_default {
+                            Err(e) => return Err(e),
+                            Ok(v ) => v,
+                        }
                     } else {
-                        ask_string(&var.prompt, &s, &var.validation)?
+                        s.clone()
                     };
+
+                    let res = if no_input {
+                        default_value
+                    } else {
+                        ask_string(&var.prompt, &default_value, &var.validation)?
+                    };
+
                     vals.insert(var.name.clone(), Value::String(res));
                     continue;
                 }
@@ -253,5 +272,48 @@ mod tests {
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
         assert!(!res.contains_key("pg_bouncer"));
+    }
+
+    #[test]
+    fn use_previous_responses_in_default_value_with_variable_template() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+            name = "Test template"
+            description = "Let's use previous responses to populate default field in other variables"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "project_one"
+            default = "my_project"
+            prompt = "What's the name of your first project?"
+
+            [[variables]]
+            name = "project_two"
+            default = "other_project"
+            prompt = "What's the name of your second project?"
+
+            [[variables]]
+            name = "manifest"
+            default = "{{project_one}}-{{project_two}}-manifest.md"
+            prompt = "What's the manifest name file?"
+        "#,
+        )
+        .unwrap();
+
+        assert_eq!(tpl.variables.len(), 3);
+
+        let res = tpl.ask_questions(true);
+        
+        assert!(res.is_ok());
+        let res = res.unwrap();
+
+        assert!(res.contains_key("project_one"));
+        assert!(res.contains_key("project_two"));
+        assert!(res.contains_key("manifest"));
+
+        let got_value = res.get("manifest").unwrap();
+        let expected_value: String = String::from("my_project-other_project-manifest.md");
+
+        assert_eq!(got_value, &Value::String(expected_value))        
     }
 }

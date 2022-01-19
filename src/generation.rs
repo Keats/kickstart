@@ -6,12 +6,12 @@ use std::process::Command;
 use std::str;
 
 use glob::Pattern;
-use tera::{Context, Tera};
+use tera::{Context};
 use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
 use crate::errors::{map_io_err, new_error, ErrorKind, Result};
-use crate::utils::{create_directory, get_source, is_binary, read_file, write_file, Source};
+use crate::utils::{render_one_off_template, create_directory, get_source, is_binary, read_file, write_file, Source};
 
 /// The current template being generated
 #[derive(Debug, PartialEq)]
@@ -58,19 +58,6 @@ impl Template {
             buf.push(dir);
         }
         Template { path: buf }
-    }
-
-    fn render_template(
-        &self,
-        content: &str,
-        context: &Context,
-        path: Option<PathBuf>,
-    ) -> Result<String> {
-        let mut tera = Tera::default();
-
-        tera.add_raw_template("one_off", content)
-            .and_then(|_| tera.render("one_off", context))
-            .map_err(|err| new_error(ErrorKind::Tera { err, path }))
     }
 
     /// Generate the template at the given output directory
@@ -138,7 +125,7 @@ impl Template {
             }
 
             let path_str = path_str.replace("$$", "|");
-            let tpl = self.render_template(&path_str, &context, None)?;
+            let tpl = render_one_off_template(&path_str, &context, None)?;
             let real_path = output_dir.join(Path::new(&tpl));
 
             if entry.path().is_dir() {
@@ -158,7 +145,7 @@ impl Template {
                 continue;
             }
 
-            let contents = self.render_template(
+            let contents = render_one_off_template(
                 &str::from_utf8(&buffer).unwrap(),
                 &context,
                 Some(entry.path().to_path_buf()),
@@ -171,7 +158,7 @@ impl Template {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
-                        let actual_path = self.render_template(&p, &context, None)?;
+                        let actual_path = render_one_off_template(&p, &context, None)?;
                         let path_to_delete = output_dir.join(actual_path);
                         if !path_to_delete.exists() {
                             continue;
