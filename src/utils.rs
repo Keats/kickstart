@@ -53,7 +53,10 @@ pub fn render_one_off_template(
     context: &Context,
     path: Option<PathBuf>,
 ) -> Result<String> {
-    Tera::one_off(content, context, false)
+    let mut tera = Tera::default();
+    tera_text_filters::register_all(&mut tera);
+
+    tera.render_str(content, context)
         .map_err(|err| new_error(ErrorKind::Tera { err, path }))
 }
 
