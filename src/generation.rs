@@ -36,7 +36,7 @@ impl Template {
     pub fn from_git(remote: &str, sub_dir: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        println!("Tmp dir: {:?}", tmp);
+        println!("Tmp dir: {tmp:?}");
         tmp.push(remote.split('/').last().unwrap_or("kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
@@ -46,7 +46,7 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .args(&["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
+            .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
         Ok(Template::from_local(&tmp, sub_dir))
@@ -91,8 +91,8 @@ impl Template {
         }
 
         if !output_dir.exists() {
-            println!("Creating {:?}", output_dir);
-            create_directory(&output_dir)?;
+            println!("Creating {output_dir:?}");
+            create_directory(output_dir)?;
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
@@ -100,7 +100,7 @@ impl Template {
             definition.copy_without_render.iter().map(|s| Pattern::new(s).unwrap()).collect();
 
         let start_path = if let Some(ref directory) = definition.directory {
-            self.path.join(&directory)
+            self.path.join(directory)
         } else {
             self.path.clone()
         };
@@ -147,19 +147,19 @@ impl Template {
             }
 
             // Only pass non-binary files or the files not matching the copy_without_render patterns through Tera
-            let mut f = File::open(&entry.path())?;
+            let mut f = File::open(entry.path())?;
             let mut buffer = Vec::new();
             f.read_to_end(&mut buffer)?;
 
             let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
 
             if no_render || is_binary(&buffer) {
-                map_io_err(fs::copy(&entry.path(), &real_path), entry.path())?;
+                map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
                 continue;
             }
 
             let contents = render_one_off_template(
-                &str::from_utf8(&buffer).unwrap(),
+                str::from_utf8(&buffer).unwrap(),
                 &context,
                 Some(entry.path().to_path_buf()),
             )?;
@@ -171,7 +171,7 @@ impl Template {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
-                        let actual_path = render_one_off_template(&p, &context, None)?;
+                        let actual_path = render_one_off_template(p, &context, None)?;
                         let path_to_delete = output_dir.join(actual_path);
                         if !path_to_delete.exists() {
                             continue;
@@ -200,7 +200,7 @@ mod tests {
     fn can_generate_from_local_path() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/complex", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(dir.path(), true);
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -210,7 +210,7 @@ mod tests {
     fn can_generate_from_local_path_with_directory() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/with-directory", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(dir.path(), true);
         assert!(res.is_ok());
         assert!(dir.path().join("Hello").join("Howdy.py").exists());
     }
@@ -219,7 +219,7 @@ mod tests {
     fn can_generate_from_local_path_with_subdir() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(dir.path(), true);
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -229,8 +229,8 @@ mod tests {
     fn can_generate_from_remote_repo() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
-        println!("{:?}", res);
+        let res = tpl.generate(dir.path(), true);
+        println!("{res:?}");
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
         assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
@@ -242,8 +242,8 @@ mod tests {
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
-        println!("{:?}", res);
+        let res = tpl.generate(dir.path(), true);
+        println!("{res:?}");
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -253,7 +253,7 @@ mod tests {
     fn can_generate_handling_slugify() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/slugify", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res = tpl.generate(dir.path(), true);
         assert!(res.is_ok());
         assert!(!dir.path().join("template.toml").exists());
         assert!(dir.path().join("hello.md").exists());

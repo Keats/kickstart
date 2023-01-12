@@ -87,16 +87,16 @@ impl StdError for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.kind {
-            ErrorKind::Io { ref err, ref path } => write!(f, "{}: {:?}", err, path),
+            ErrorKind::Io { ref err, ref path } => write!(f, "{err}: {path:?}"),
             ErrorKind::Tera { ref err, ref path } => {
                 if let Some(p) = path {
-                    write!(f, "{}: {:?}", err, p)
+                    write!(f, "{err}: {p:?}")
                 } else {
-                    write!(f, "{}: rendering a one-off template", err)
+                    write!(f, "{err}: rendering a one-off template")
                 }
             }
-            ErrorKind::Git { ref err } => write!(f, "Could not clone the repository: {}", err),
-            ErrorKind::Toml { ref err } => write!(f, "Invalid TOML: {}", err),
+            ErrorKind::Git { ref err } => write!(f, "Could not clone the repository: {err}"),
+            ErrorKind::Toml { ref err } => write!(f, "Invalid TOML: {err}"),
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
             ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),

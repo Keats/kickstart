@@ -23,7 +23,7 @@ pub fn ask_bool(prompt: &str, default: bool) -> Result<bool> {
         "n" | "N" | "no" | "NO" | "false" => false,
         "" => default,
         _ => {
-            terminal::error(&format!("Invalid choice: '{}'\n", input));
+            terminal::error(&format!("Invalid choice: '{input}'\n"));
             ask_bool(prompt, default)?
         }
     };
@@ -45,7 +45,7 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
                 if re.is_match(&input) {
                     input
                 } else {
-                    terminal::error(&format!("The value needs to pass the regex: {}\n", pattern));
+                    terminal::error(&format!("The value needs to pass the regex: {pattern}\n"));
                     ask_string(prompt, default, validation)?
                 }
             } else {
@@ -68,7 +68,7 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
         _ => match input.parse::<i64>() {
             Ok(i) => i,
             Err(_) => {
-                terminal::error(&format!("Invalid integer: '{}'\n", input));
+                terminal::error(&format!("Invalid integer: '{input}'\n"));
                 ask_integer(prompt, default)?
             }
         },
@@ -83,7 +83,7 @@ pub fn ask_choices(
     default: &toml::Value,
     choices: &[toml::Value],
 ) -> Result<toml::Value> {
-    terminal::bold(&format!("{}: \n", prompt));
+    terminal::bold(&format!("{prompt}: \n"));
     let mut lines = vec![];
     let mut default_index = 1;
 
@@ -110,13 +110,13 @@ pub fn ask_choices(
         _ => {
             if let Ok(num) = input.parse::<usize>() {
                 if num > choices.len() {
-                    terminal::error(&format!("Invalid choice: '{}'\n", input));
+                    terminal::error(&format!("Invalid choice: '{input}'\n"));
                     ask_choices(prompt, default, choices)?
                 } else {
                     choices[num - 1].clone()
                 }
             } else {
-                terminal::error(&format!("Invalid choice: '{}'\n", input));
+                terminal::error(&format!("Invalid choice: '{input}'\n"));
                 ask_choices(prompt, default, choices)?
             }
         }

@@ -120,7 +120,7 @@ impl TemplateDefinition {
                             context.insert(key, val);
                         }
 
-                        let rendered_default = render_one_off_template(&s, &context, None);
+                        let rendered_default = render_one_off_template(s, &context, None);
                         match rendered_default {
                             Err(e) => return Err(e),
                             Ok(v) => v,
@@ -153,7 +153,7 @@ impl TemplateDefinition {
 
 #[cfg(test)]
 mod tests {
-    use toml;
+    
 
     use super::*;
 

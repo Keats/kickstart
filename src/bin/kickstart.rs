@@ -45,10 +45,10 @@ pub fn build_cli() -> Command {
 }
 
 fn bail(e: &dyn Error) -> ! {
-    terminal::error(&format!("Error: {}", e));
+    terminal::error(&format!("Error: {e}"));
     let mut cause = e.source();
     while let Some(e) = cause {
-        terminal::error(&format!("Reason: {}", e));
+        terminal::error(&format!("Reason: {e}"));
         cause = e.source();
     }
     ::std::process::exit(1)
@@ -67,7 +67,7 @@ fn main() {
             if !errs.is_empty() {
                 terminal::error("The template.toml is invalid:\n");
                 for err in errs {
-                    terminal::error(&format!("- {}\n", err));
+                    terminal::error(&format!("- {err}\n"));
                 }
                 ::std::process::exit(1);
             } else {
