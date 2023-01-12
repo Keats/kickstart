@@ -153,7 +153,6 @@ impl TemplateDefinition {
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
 

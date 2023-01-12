@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use memchr::memchr;
 use tera::{Context, Tera};
 
-use crate::errors::{map_io_err, new_error, Result, ErrorKind};
+use crate::errors::{map_io_err, new_error, ErrorKind, Result};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -53,8 +53,7 @@ pub fn render_one_off_template(
     context: &Context,
     path: Option<PathBuf>,
 ) -> Result<String> {
-    Tera::one_off(content, context, false)
-        .map_err(|err| new_error(ErrorKind::Tera { err, path }))
+    Tera::one_off(content, context, false).map_err(|err| new_error(ErrorKind::Tera { err, path }))
 }
 
 /// Is the buffer from a binary file?

@@ -11,7 +11,9 @@ use walkdir::WalkDir;
 
 use crate::definition::TemplateDefinition;
 use crate::errors::{map_io_err, new_error, ErrorKind, Result};
-use crate::utils::{render_one_off_template, create_directory, get_source, is_binary, read_file, write_file, Source};
+use crate::utils::{
+    create_directory, get_source, is_binary, read_file, render_one_off_template, write_file, Source,
+};
 
 /// The current template being generated
 #[derive(Debug, PartialEq)]
