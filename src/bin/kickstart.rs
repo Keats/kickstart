@@ -2,39 +2,38 @@ use std::env;
 use std::error::Error;
 use std::path::Path;
 
-use clap::{arg, command, Command};
+use clap::{arg, Command};
 
 use kickstart::generation::Template;
 use kickstart::terminal;
 use kickstart::validate::validate_file;
 
 pub fn build_cli() -> Command {
-    command!()
-        .arg(arg!("kickstart"))
+    Command::new("kickstart")
         // .about(crate_description!())
         // .setting(AppSettings::SubcommandsNegateReqs)
         .arg(
-            arg!([name] "template")
+            arg!([template] "template")
                 .required(true)
                 .help("Template to use: a local path or a HTTP url pointing to a Git repository"),
         )
         .arg(
-            arg!([name] "output-dir")
-                .short('o')
-                .long("output-dir")
+            arg!(-o --"output-dir" <FOLDER> "output-dir")
+                // .short('o')
+                // .long("output-dir")
                 .num_args(1)
                 .help("Where to output the project: defaults to the current directory"),
         )
         .arg(
-            arg!([name]  "sub-dir")
-                .short('s')
-                .long("sub-dir")
+            arg!(-s --"sub-dir" <FOLDER> "sub-dir")
+                // .short('s')
+                // .long("sub-dir")
                 .num_args(1)
                 .help("A subdirectory of the chosen template to use, to allow nested templates."),
         )
         .arg(
-            arg!([name] "no-input")
-                .long("no-input")
+            arg!(--"no-input" "no-input")
+                // .long("no-input")
                 .help("Do not prompt for parameters and only use the defaults from template.toml"),
         )
         .subcommand(
@@ -81,7 +80,7 @@ fn main() {
                 .get_one::<String>("output-dir")
                 .map(|p| Path::new(p).to_path_buf())
                 .unwrap_or_else(|| env::current_dir().unwrap());
-            let no_input = matches.get_one::<String>("no-input").is_some();
+            let no_input = matches.get_one::<bool>("no-input").is_some();
             let sub_dir = matches.get_one::<String>("sub-dir");
 
             let template = match Template::from_input(template_path, sub_dir.map(|x| &**x)) {
