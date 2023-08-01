@@ -52,11 +52,11 @@ stages:
         strategy:
           matrix:
             windows-stable:
-              imageName: 'vs2017-win2016'
+              imageName: 'windows-2022'
               rustup_toolchain: stable
               target: 'x86_64-pc-windows-msvc'
             mac-stable:
-              imageName: 'macos-10.14'
+              imageName: 'macos-13'
               rustup_toolchain: stable
               target: 'x86_64-apple-darwin'
             linux-stable:
