@@ -11,17 +11,17 @@ stages:
         strategy:
           matrix:
             windows-stable:
-              imageName: 'vs2017-win2016'
+              imageName: 'windows-2022'
               rustup_toolchain: stable
             mac-stable:
-              imageName: 'macos-10.14'
+              imageName: 'macos-13'
               rustup_toolchain: stable
             linux-stable:
               imageName: 'ubuntu-latest'
               rustup_toolchain: stable
             linux-msrv:
               imageName: 'ubuntu-latest'
-              rustup_toolchain: 1.40.0
+              rustup_toolchain: 1.65.0
         pool:
           vmImage: $(imageName)
         steps:
