@@ -48,7 +48,7 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .args(&["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
+            .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
         Ok(Template::from_local(&tmp, sub_dir))
@@ -81,7 +81,7 @@ impl Template {
 
         if !output_dir.exists() {
             println!("Creating {:?}", output_dir);
-            create_directory(&output_dir)?;
+            create_directory(output_dir)?;
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
@@ -89,7 +89,7 @@ impl Template {
             definition.copy_without_render.iter().map(|s| Pattern::new(s).unwrap()).collect();
 
         let start_path = if let Some(ref directory) = definition.directory {
-            self.path.join(&directory)
+            self.path.join(directory)
         } else {
             self.path.clone()
         };
@@ -136,19 +136,19 @@ impl Template {
             }
 
             // Only pass non-binary files or the files not matching the copy_without_render patterns through Tera
-            let mut f = File::open(&entry.path())?;
+            let mut f = File::open(entry.path())?;
             let mut buffer = Vec::new();
             f.read_to_end(&mut buffer)?;
 
             let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
 
             if no_render || is_binary(&buffer) {
-                map_io_err(fs::copy(&entry.path(), &real_path), entry.path())?;
+                map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
                 continue;
             }
 
             let contents = render_one_off_template(
-                &str::from_utf8(&buffer).unwrap(),
+                str::from_utf8(&buffer).unwrap(),
                 &context,
                 Some(entry.path().to_path_buf()),
             )?;
@@ -160,7 +160,7 @@ impl Template {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
-                        let actual_path = render_one_off_template(&p, &context, None)?;
+                        let actual_path = render_one_off_template(p, &context, None)?;
                         let path_to_delete = output_dir.join(actual_path);
                         if !path_to_delete.exists() {
                             continue;
