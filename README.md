@@ -194,7 +194,12 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
 
-### 0.3.0 (unreleased)
+### 0.4.0 (unrelased)
+
+- Add case conversion filter
+- Update dependencies
+
+### 0.3.0 (2021-07-10)
 
 - Update dependencies
 
