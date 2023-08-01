@@ -1,46 +1,42 @@
-use std::env;
 use std::error::Error;
-use std::path::Path;
+use std::path::{PathBuf};
 
-use clap::{crate_authors, crate_description, crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{Parser, Subcommand};
 
 use kickstart::generation::Template;
 use kickstart::terminal;
 use kickstart::validate::validate_file;
 
-pub fn build_cli() -> App<'static, 'static> {
-    App::new("kickstart")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .about(crate_description!())
-        .setting(AppSettings::SubcommandsNegateReqs)
-        .arg(
-            Arg::with_name("template")
-                .required(true)
-                .help("Template to use: a local path or a HTTP url pointing to a Git repository"),
-        )
-        .arg(
-            Arg::with_name("output-dir")
-                .short("o")
-                .long("output-dir")
-                .takes_value(true)
-                .help("Where to output the project: defaults to the current directory"),
-        )
-        .arg(
-            Arg::with_name("sub-dir")
-                .short("s")
-                .long("sub-dir")
-                .takes_value(true)
-                .help("A subdirectory of the chosen template to use, to allow nested templates."),
-        )
-        .arg(
-            Arg::with_name("no-input")
-                .long("no-input")
-                .help("Do not prompt for parameters and only use the defaults from template.toml"),
-        )
-        .subcommands(vec![SubCommand::with_name("validate")
-            .about("Validates that a template.toml is valid")
-            .arg(Arg::with_name("path").required(true).help("The path to the template.toml"))])
+#[derive(Parser)]
+#[clap(version, author, about, subcommand_negates_reqs = true)]
+pub struct Cli {
+    /// Template to use: a local path or a HTTP url pointing to a Git repository
+    #[clap(required = true)]
+    pub template: Option<String>,
+
+    /// Where to output the project: defaults to the current directory
+    #[clap(short = 'o', long, default_value = ".")]
+    pub output_dir: PathBuf,
+
+    /// A subdirectory of the chosen template to use, to allow nested templates.
+    #[clap(short = 's', long)]
+    pub sub_dir: Option<String>,
+
+    /// Do not prompt for parameters and only use the defaults from template.toml
+    #[clap(long, default_value_t = false)]
+    pub no_input: bool,
+
+    #[clap(subcommand)]
+    pub command: Option<Command>,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    /// Validates that a template.toml is valid
+    Validate {
+        /// The path to the template.toml
+        path: PathBuf,
+    },
 }
 
 fn bail(e: &dyn Error) -> ! {
@@ -54,44 +50,32 @@ fn bail(e: &dyn Error) -> ! {
 }
 
 fn main() {
-    let matches = build_cli().get_matches();
+    let cli = Cli::parse();
 
-    match matches.subcommand() {
-        ("validate", Some(matches)) => {
-            let errs = match validate_file(matches.value_of("path").unwrap()) {
-                Ok(e) => e,
-                Err(e) => bail(&e),
-            };
+    if let Some(Command::Validate { path }) = cli.command {
+        let errs = match validate_file(path) {
+            Ok(e) => e,
+            Err(e) => bail(&e),
+        };
 
-            if !errs.is_empty() {
-                terminal::error("The template.toml is invalid:\n");
-                for err in errs {
-                    terminal::error(&format!("- {}\n", err));
-                }
-                ::std::process::exit(1);
-            } else {
-                terminal::success("The template.toml file is valid!\n");
+        if !errs.is_empty() {
+            terminal::error("The template.toml is invalid:\n");
+            for err in errs {
+                terminal::error(&format!("- {}\n", err));
             }
+            ::std::process::exit(1);
+        } else {
+            terminal::success("The template.toml file is valid!\n");
         }
-        _ => {
-            // The actual generation call
-            let template_path = matches.value_of("template").unwrap();
-            let output_dir = matches
-                .value_of("output-dir")
-                .map(|p| Path::new(p).to_path_buf())
-                .unwrap_or_else(|| env::current_dir().unwrap());
-            let no_input = matches.is_present("no-input");
-            let sub_dir = matches.value_of("sub-dir");
+    } else {
+        let template = match Template::from_input(&cli.template.unwrap(), cli.sub_dir.as_deref()) {
+            Ok(t) => t,
+            Err(e) => bail(&e),
+        };
 
-            let template = match Template::from_input(template_path, sub_dir) {
-                Ok(t) => t,
-                Err(e) => bail(&e),
-            };
-
-            match template.generate(&output_dir, no_input) {
-                Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
-                Err(e) => bail(&e),
-            };
-        }
+        match template.generate(&cli.output_dir, cli.no_input) {
+            Ok(_) => terminal::success("\nEverything done, ready to go!\n"),
+            Err(e) => bail(&e),
+        };
     }
 }
