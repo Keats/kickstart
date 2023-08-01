@@ -8,6 +8,7 @@
 
 mod definition;
 pub mod errors;
+mod filters;
 pub mod generation;
 mod prompt;
 pub mod terminal;

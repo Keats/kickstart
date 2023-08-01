@@ -30,6 +30,7 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - It can load templates from a local directory or from a Git repository
 - It has conditional cleanup to not let irrelevant files in the output directory after generation
 - Templates can be made for any kind of projects/languages
+- Case conversion filters, e.g. `camelCase` to `CamelCase`
 
 The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
 
@@ -178,6 +179,18 @@ And three more optional fields:
 ## List of templates
 
 - [Rust CLI application](https://github.com/Keats/rust-cli-template)
+
+## Case Conversion Filters
+Case conversion filters are provided (_via [heck](https://github.com/withoutboats/heck)_):
+- `upper_camel_case`: UpperCamelCase
+- `camel_case`: lowerCamelCase
+- `snake_case`: snake_case
+- `kebab_case`: kebab-case
+- `shouty_snake_case`: SHOUTY_SNAKE_CASE
+- `title_case`: Title Case
+- `shouty_kebab_case`: SHOUTY-KEBAB-CASE
+
+You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
 
