@@ -194,7 +194,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
 
-### 0.4.0 (unrelased)
+### 0.4.0 (2023-08-02)
 
 - Add case conversion filter
 - Update dependencies
