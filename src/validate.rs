@@ -72,7 +72,7 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
 
             match Regex::new(pattern) {
                 Ok(re) => {
-                    if !re.is_match(&var.default.as_str().unwrap()) {
+                    if !re.is_match(var.default.as_str().unwrap()) {
                         errs.push(format!(
                             "Variable `{}` has a default that doesn't pass its validation regex",
                             var.name

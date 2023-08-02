@@ -15,35 +15,35 @@ pub fn register_all_filters(tera: &mut Tera) {
 
 pub fn upper_camel_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("upper_camel_case", "value", String, value);
-    Ok(to_value(&s.to_upper_camel_case()).unwrap())
+    Ok(to_value(s.to_upper_camel_case()).unwrap())
 }
 
 pub fn camel_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("camel_case", "value", String, value);
-    Ok(to_value(&s.to_lower_camel_case()).unwrap())
+    Ok(to_value(s.to_lower_camel_case()).unwrap())
 }
 
 pub fn snake_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("snake_case", "value", String, value);
-    Ok(to_value(&s.to_snake_case()).unwrap())
+    Ok(to_value(s.to_snake_case()).unwrap())
 }
 
 pub fn kebab_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("kebab_case", "value", String, value);
-    Ok(to_value(&s.to_kebab_case()).unwrap())
+    Ok(to_value(s.to_kebab_case()).unwrap())
 }
 
 pub fn shouty_snake_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("shouty_snake_case", "value", String, value);
-    Ok(to_value(&s.to_shouty_snake_case()).unwrap())
+    Ok(to_value(s.to_shouty_snake_case()).unwrap())
 }
 
 pub fn title_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("title_case", "value", String, value);
-    Ok(to_value(&s.to_title_case()).unwrap())
+    Ok(to_value(s.to_title_case()).unwrap())
 }
 
 pub fn shouty_kebab_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("shouty_kebab_case", "value", String, value);
-    Ok(to_value(&s.to_shouty_kebab_case()).unwrap())
+    Ok(to_value(s.to_shouty_kebab_case()).unwrap())
 }

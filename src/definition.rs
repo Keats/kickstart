@@ -1,13 +1,12 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
-use regex::{Regex, Match};
 use serde::Deserialize;
-use tera::{Context};
+use tera::Context;
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
-use crate::utils::{render_one_off_template};
+use crate::utils::render_one_off_template;
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -122,10 +121,10 @@ impl TemplateDefinition {
                             context.insert(key, val);
                         }
 
-                        let rendered_default = render_one_off_template(&s, &context, None);
+                        let rendered_default = render_one_off_template(s, &context, None);
                         match rendered_default {
                             Err(e) => return Err(e),
-                            Ok(v ) => v,
+                            Ok(v) => v,
                         }
                     } else {
                         s.clone()
@@ -303,7 +302,7 @@ mod tests {
         assert_eq!(tpl.variables.len(), 3);
 
         let res = tpl.ask_questions(true);
-        
+
         assert!(res.is_ok());
         let res = res.unwrap();
 
@@ -314,6 +313,6 @@ mod tests {
         let got_value = res.get("manifest").unwrap();
         let expected_value: String = String::from("my_project-other_project-manifest.md");
 
-        assert_eq!(got_value, &Value::String(expected_value))        
+        assert_eq!(got_value, &Value::String(expected_value))
     }
 }
