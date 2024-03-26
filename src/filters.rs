@@ -11,6 +11,8 @@ pub fn register_all_filters(tera: &mut Tera) {
     tera.register_filter("shouty_snake_case", shouty_snake_case);
     tera.register_filter("title_case", title_case);
     tera.register_filter("shouty_kebab_case", shouty_kebab_case);
+    tera.register_filter("lowercase", lowercase);
+    tera.register_filter("uppercase", uppercase);
 }
 
 pub fn upper_camel_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
@@ -46,4 +48,14 @@ pub fn title_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
 pub fn shouty_kebab_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     let s = try_get_value!("shouty_kebab_case", "value", String, value);
     Ok(to_value(s.to_shouty_kebab_case()).unwrap())
+}
+
+pub fn lowercase(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+    let s = try_get_value!("lowercase", "value", String, value);
+    Ok(to_value(s.to_lowercase()).unwrap())
+}
+
+pub fn uppercase(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
+    let s = try_get_value!("uppercase", "value", String, value);
+    Ok(to_value(s.to_uppercase()).unwrap())
 }

@@ -189,6 +189,8 @@ Case conversion filters are provided (_via [heck](https://github.com/withoutboat
 - `shouty_snake_case`: SHOUTY_SNAKE_CASE
 - `title_case`: Title Case
 - `shouty_kebab_case`: SHOUTY-KEBAB-CASE
+- `lowercase`: lowercase
+- `uppercase`: UPPERCASE
 
 You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
