@@ -95,7 +95,7 @@ impl Template {
         };
 
         // And now generate the files in the output dir given
-        let walker = WalkDir::new(&start_path)
+        let walker = WalkDir::new(&start_path).follow_links(definition.symlinks)
             .into_iter()
             .filter_entry(|e| {
                 // Ignore .git/ folder
