@@ -5,7 +5,7 @@ edition = "2021"
 keywords = ["tera", "scaffolding", "templating", "generator", "boilerplate"]
 license = "MIT"
 name = "kickstart"
-version = "0.4.0"
+version = "0.5.0"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -14,9 +14,9 @@ memchr = "2"
 regex = "1"
 serde = {version = "1", features = ["derive"]}
 tera = "1"
-heck = "0.4.0"
-term = "0.7"
-toml = "0.7"
+heck = "0.5"
+term = "1"
+toml = "0.8"
 walkdir = "2"
 
 [dev-dependencies]
