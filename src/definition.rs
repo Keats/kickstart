@@ -36,7 +36,7 @@ pub struct Variable {
     pub choices: Option<Vec<Value>>,
     /// A regex pattern to validate the input
     pub validation: Option<String>,
-    /// Only ask this variable is the condition is true
+    /// Only ask this variable if that condition is true
     pub only_if: Option<VariableCondition>,
 }
 
