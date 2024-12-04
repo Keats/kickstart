@@ -15,7 +15,7 @@ jobs:
         include:
           - build: msrv
             os: ubuntu-latest
-            rust: 1.65.0
+            rust: 1.66.0
           - build: stable
             os: ubuntu-latest
             rust: stable
@@ -33,5 +33,5 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Build System Info
         run: rustc --version
-      - name: tests with default feature
+      - name: run tests
         run: cargo test
