@@ -1,0 +1,37 @@
+name: ci
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    name: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [msrv, stable, macos, win-msvc]
+        include:
+          - build: msrv
+            os: ubuntu-latest
+            rust: 1.65.0
+          - build: stable
+            os: ubuntu-latest
+            rust: stable
+          - build: macos
+            os: macOS-latest
+            rust: stable
+          - build: win-msvc
+            os: windows-2019
+            rust: stable
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - name: Build System Info
+        run: rustc --version
+      - name: tests with default feature
+        run: cargo test
