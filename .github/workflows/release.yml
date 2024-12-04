@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+env:
+  # Cross-compilation for aarch64 requires a different linker
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+permissions:
+  contents: read
+
+jobs:
+  Release-Build:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - x86_64-pc-windows-msvc
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+        rustup_toolchain: [stable]
+        include:
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-20.04
+            target: aarch64-unknown-linux-gnu
+          - os: macos-13
+            target: x86_64-apple-darwin
+          - os: macos-14
+            target: aarch64-apple-darwin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rustup_toolchain }}
+
+      - name: Install Rust crosscompile tools
+        if: ${{ contains(matrix.target, 'aarch64-unknown-linux-gnu') }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y make g++ libssl-dev gcc-aarch64-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+
+      - name: Cargo build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Archive (UNIX)
+        run: |
+          mkdir -p artifacts
+          cp -av target/${{ matrix.target }}/release/kickstart .
+          tar -czf ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.target }}.tar.gz kickstart
+        if: ${{ ! startsWith(matrix.os, 'windows') }}
+
+      - name: Archive (Windows)
+        run: |
+          mkdir -p artifacts
+          cp target/${{ matrix.target }}/release/kickstart.exe .
+          Compress-Archive kickstart.exe ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.target }}.zip
+        if: ${{ startsWith(matrix.os, 'windows') }}
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v1
+        continue-on-error: true
+        with:
+          subject-path: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.target }}.*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.target }}
+          path: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.target }}.*
+          if-no-files-found: error
+          retention-days: 7
+
+  Release:
+    needs: [Release-Build]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Ensure artifacts dir exists
+        run: mkdir -p artifacts
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Release
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            Welcome to this new release of kickstart ${{ github.ref_name }}!
+
+            All artifacts are signed with this repos identity using Sigstore.
+            You can verify the signatures using the `GitHub` CLI.
+
+            ```shell
+            gh attestation verify --owner ${{ github.repository_owner }} <my-artifact>
+            ```
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ contains(github.ref, '-pre') }}
+          files: artifacts/*
