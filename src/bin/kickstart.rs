@@ -19,6 +19,7 @@ pub struct Cli {
     pub output_dir: PathBuf,
 
     /// A subdirectory of the chosen template to use, to allow nested templates.
+    /// The subdirectory needs to be a template itself.
     #[clap(short = 's', long)]
     pub sub_dir: Option<String>,
 
