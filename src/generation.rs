@@ -86,6 +86,7 @@ impl Template {
         let mut patterns = Vec::with_capacity(definition.copy_without_render.len());
         for s in &definition.copy_without_render {
             let rendered = render_one_off_template(s, &context, None)?;
+            println!("rendered: {rendered:?}");
             match Pattern::new(&rendered) {
                 Ok(p) => patterns.push(p),
                 Err(err) => {
@@ -150,7 +151,9 @@ impl Template {
             let mut buffer = Vec::new();
             f.read_to_end(&mut buffer)?;
 
-            let no_render = patterns.iter().map(|p| p.matches_path(&real_path)).any(|x| x);
+            // For patterns, we do not want the output directory to be included
+            let glob_real_path = real_path.strip_prefix(output_dir).expect("valid path");
+            let no_render = patterns.iter().map(|p| p.matches_path(&glob_real_path)).any(|x| x);
 
             if no_render || is_binary(&buffer) {
                 map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
@@ -200,6 +203,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/complex", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
+        println!("{res:?}");
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());

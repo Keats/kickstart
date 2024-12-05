@@ -96,10 +96,12 @@ directory = "some-directory"
 
 # Optional, a list of patterns. All files matching one of the patterns will
 # be copied over without going through Tera.
+# If you want to match a specific file in the template, you can refer to it directly with its template relative path
 # Use it for files that contain syntax similar to Tera for example.
 # The patterns themselves can be templated.
 copy_without_render = [
     "*.html",
+    "{{project_name}}/something.html",
 ]
 
 # Optional, a list of cleanup actions to do.
@@ -210,7 +212,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 - The `sub-dir` parameter has been renamed to `directory` in the CLI
 - Templates with a `directory` field will now no longer include that directory name in the output
-- `copy_without_render` elements are now templated
+- `copy_without_render` elements are now templated and refer to the template relative path if specified
 
 ### 0.4.0 (2023-08-02)
 

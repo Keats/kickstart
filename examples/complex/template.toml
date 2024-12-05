@@ -8,7 +8,7 @@ ignore = [
     "docs",
 ]
 copy_without_render = [
-    "*.html",
+    "{{project_name}}/templates/*.html",
 ]
 cleanup = [
     { name = "spa", value = true, paths = ["{{ project_name }}/templates/"]},
