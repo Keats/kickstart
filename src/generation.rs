@@ -63,6 +63,7 @@ impl Template {
 
     /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &Path, no_input: bool) -> Result<()> {
+        let output_dir = output_dir.canonicalize()?;
         // Get the variables from the user first
         let conf_path = self.path.join("template.toml");
         if !conf_path.exists() {
@@ -79,14 +80,13 @@ impl Template {
         }
 
         if !output_dir.exists() {
-            create_directory(output_dir)?;
+            create_directory(&output_dir)?;
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
         let mut patterns = Vec::with_capacity(definition.copy_without_render.len());
         for s in &definition.copy_without_render {
             let rendered = render_one_off_template(s, &context, None)?;
-            println!("rendered: {rendered:?}");
             match Pattern::new(&rendered) {
                 Ok(p) => patterns.push(p),
                 Err(err) => {
@@ -127,7 +127,7 @@ impl Template {
             }
 
             let path = entry.path().strip_prefix(&self.path).unwrap();
-            if path.starts_with(output_dir) {
+            if path.starts_with(&output_dir) {
                 continue;
             }
             let path_str = format!("{}", path.display());
@@ -152,8 +152,8 @@ impl Template {
             f.read_to_end(&mut buffer)?;
 
             // For patterns, we do not want the output directory to be included
-            let glob_real_path = real_path.strip_prefix(output_dir).expect("valid path");
-            let no_render = patterns.iter().map(|p| p.matches_path(&glob_real_path)).any(|x| x);
+            let glob_real_path = real_path.strip_prefix(&output_dir).expect("valid path");
+            let no_render = patterns.iter().map(|p| p.matches_path(glob_real_path)).any(|x| x);
 
             if no_render || is_binary(&buffer) {
                 map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
@@ -174,8 +174,9 @@ impl Template {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
                         let actual_path = render_one_off_template(p, &context, None)?;
-                        let path_to_delete = output_dir.join(actual_path);
-                        if !path_to_delete.exists() {
+                        let path_to_delete = output_dir.join(actual_path).canonicalize()?;
+                        // Avoid path traversals
+                        if !path_to_delete.starts_with(&output_dir) || !path_to_delete.exists() {
                             continue;
                         }
                         if path_to_delete.is_dir() {

@@ -213,6 +213,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 - The `sub-dir` parameter has been renamed to `directory` in the CLI
 - Templates with a `directory` field will now no longer include that directory name in the output
 - `copy_without_render` elements are now templated and refer to the template relative path if specified
+- Avoid path traversals in cleanup
 
 ### 0.4.0 (2023-08-02)
 
