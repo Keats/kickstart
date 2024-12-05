@@ -70,7 +70,8 @@ fn main() {
             terminal::success("The template.toml file is valid!\n");
         }
     } else {
-        let template = match Template::from_input(&cli.template.unwrap(), cli.directory.as_deref()) {
+        let template = match Template::from_input(&cli.template.unwrap(), cli.directory.as_deref())
+        {
             Ok(t) => t,
             Err(e) => bail(&e),
         };
