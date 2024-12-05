@@ -58,20 +58,26 @@ Creating a template is fairly simple: create files and then just add a `template
 ```toml
 # Required, name of the template
 name = "Django"
+
 # Optional, longer form description
 description = "A fully-featured Django template"
+
 # Required, the version of the kickstart schema, currently only `1` is used
 kickstart_version = 1
+
 # Optional, the URL of the template
 url = "https://google.com"
+
 # Optional, a list of authors for this template
 authors = [
 
 ]
+
 # Optional, a list of keywords for this template
 keywords = [
 
 ]
+
 # Optional, those files will NOT be copied over when generating the template
 # Use it to remove template-specific like its CI or its README/docs
 ignore = [
@@ -80,10 +86,12 @@ ignore = [
     ".travis.yml",
     "docs",
 ]
+
 # If this is set, kickstart will use this directory as a base for the template instead of
 # the root directory. This is useful when your template has its own documentation/CI/etc and you don't want
 # to ignore it.
 directory = "some-directory"
+
 # Optional, a list of patterns. All files matching one of the patterns will
 # be copied over without going through Tera.
 # Use it for files that contain syntax similar to Tera for example
@@ -167,7 +175,8 @@ only_if = { name = "spa", value = true }
 A variable has the following required fields:
 
 - `name`: the name of the variable in Tera context
-- `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported)
+- `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported). 
+You can use previous variables in the default, eg `"{{ project_name }}_settings.py"` will replace `project_name` with the value of the variable.
 - `prompt`: the text to display to the user
 
 And three more optional fields:
