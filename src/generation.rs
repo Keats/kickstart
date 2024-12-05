@@ -83,8 +83,20 @@ impl Template {
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
-        let patterns: Vec<Pattern> =
-            definition.copy_without_render.iter().map(|s| Pattern::new(s).unwrap()).collect();
+        let mut patterns = Vec::with_capacity(definition.copy_without_render.len());
+        for s in &definition.copy_without_render {
+            let rendered = render_one_off_template(s, &context, None)?;
+            match Pattern::new(&rendered) {
+                Ok(p) => patterns.push(p),
+                Err(err) => {
+                    return Err(new_error(ErrorKind::InvalidGlobPattern {
+                        err,
+                        pattern_before_rendering: s.clone(),
+                        pattern_after_rendering: if s == &rendered { None } else { Some(rendered) },
+                    }));
+                }
+            };
+        }
 
         let start_path = if let Some(ref directory) = definition.directory {
             self.path.join(directory)
@@ -203,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    fn can_generate_from_local_path_with_subdir() {
+    fn can_generate_from_local_path_with_directory_param() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
@@ -224,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn can_generate_from_remote_repo_with_subdir() {
+    fn can_generate_from_remote_repo_with_directory() {
         let dir = tempdir().unwrap();
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))

@@ -51,6 +51,12 @@ pub enum ErrorKind {
     Toml {
         err: toml::de::Error,
     },
+    /// A glob pattern couldn't be built from the input
+    InvalidGlobPattern {
+        pattern_before_rendering: String,
+        pattern_after_rendering: Option<String>,
+        err: glob::PatternError,
+    },
 }
 
 impl From<io::Error> for Error {
@@ -66,6 +72,7 @@ impl StdError for Error {
             ErrorKind::Tera { ref err, .. } => Some(err),
             ErrorKind::Toml { ref err } => Some(err),
             ErrorKind::Git { ref err } => Some(err),
+            ErrorKind::InvalidGlobPattern { ref err, .. } => Some(err),
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
@@ -97,6 +104,21 @@ impl fmt::Display for Error {
             }
             ErrorKind::Git { ref err } => write!(f, "Could not clone the repository: {}", err),
             ErrorKind::Toml { ref err } => write!(f, "Invalid TOML: {}", err),
+            ErrorKind::InvalidGlobPattern {
+                ref err,
+                ref pattern_before_rendering,
+                ref pattern_after_rendering,
+            } => {
+                if let Some(after) = pattern_after_rendering {
+                    write!(
+                        f,
+                        "Invalid glob pattern `{}` (before rendering: {}): {}",
+                        after, pattern_before_rendering, err
+                    )
+                } else {
+                    write!(f, "Invalid glob pattern `{}`: {}", pattern_before_rendering, err)
+                }
+            }
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
             ErrorKind::InvalidTemplate => write!(f, "The template.toml is invalid"),
