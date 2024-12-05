@@ -23,7 +23,7 @@ pub struct Cli {
     #[clap(short = 's', long)]
     pub sub_dir: Option<String>,
 
-    /// Do not prompt for parameters and only use the defaults from template.toml
+    /// Do not prompt for variables and only use the defaults from template.toml
     #[clap(long, default_value_t = false)]
     pub no_input: bool,
 
