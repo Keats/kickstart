@@ -18,10 +18,11 @@ pub struct Cli {
     #[clap(short = 'o', long, default_value = ".")]
     pub output_dir: PathBuf,
 
-    /// A subdirectory of the chosen template to use, to allow nested templates.
-    /// The subdirectory needs to be a template itself.
-    #[clap(short = 's', long)]
-    pub sub_dir: Option<String>,
+    /// The directory of the given folder/repository to use, which needs to be a template.
+    /// Only really useful if you are loading a template from a repository. If you are loading
+    /// from the filesystem you can directly point to the right folder.
+    #[clap(short = 'd', long)]
+    pub directory: Option<String>,
 
     /// Do not prompt for variables and only use the defaults from template.toml
     #[clap(long, default_value_t = false)]
@@ -69,7 +70,7 @@ fn main() {
             terminal::success("The template.toml file is valid!\n");
         }
     } else {
-        let template = match Template::from_input(&cli.template.unwrap(), cli.sub_dir.as_deref()) {
+        let template = match Template::from_input(&cli.template.unwrap(), cli.directory.as_deref()) {
             Ok(t) => t,
             Err(e) => bail(&e),
         };

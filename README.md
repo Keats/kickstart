@@ -39,7 +39,8 @@ The main drawback compared to cookiecutter is the lack of hook scripts support, 
 Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
 by using the `$$` separator instead.
 
-Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
+Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. 
+Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
 
 ## Try it out
 
@@ -176,7 +177,7 @@ A variable has the following required fields:
 
 - `name`: the name of the variable in Tera context
 - `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported). 
-You can use previous variables in the default, eg `"{{ project_name }}_settings.py"` will replace `project_name` with the value of the variable.
+You can use previous variables in the default, eg `"{{ project_name | lower }}"` will replace `project_name` with the value of the variable.
 - `prompt`: the text to display to the user
 
 And three more optional fields:
@@ -202,6 +203,11 @@ Case conversion filters are provided (_via [heck](https://github.com/withoutboat
 You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
+
+### 0.5.0 (unreleased)
+
+- The `sub-dir` parameter has been renamed to `directory` in the CLI
+- Templates with a `directory` field will now no longer include that directory name in the output
 
 ### 0.4.0 (2023-08-02)
 

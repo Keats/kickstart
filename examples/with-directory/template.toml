@@ -1,7 +1,7 @@
 name = "Super basic"
 description = "A very simple template"
 kickstart_version = 1
-directory = "{{directory_name}}"
+directory = "template_root"
 
 [[variables]]
 name = "directory_name"

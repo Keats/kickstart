@@ -26,16 +26,16 @@ impl Template {
     /// Load a template from a string.
     /// It will try to detect whether this is a local folder or whether
     /// it should try to clone it.
-    pub fn from_input(input: &str, sub_dir: Option<&str>) -> Result<Template> {
+    pub fn from_input(input: &str, directory: Option<&str>) -> Result<Template> {
         match get_source(input) {
-            Source::Git(remote) => Template::from_git(&remote, sub_dir),
-            Source::Local(path) => Ok(Template::from_local(&path, sub_dir)),
+            Source::Git(remote) => Template::from_git(&remote, directory),
+            Source::Local(path) => Ok(Template::from_local(&path, directory)),
         }
     }
 
     /// Load a template from git.
     /// This will clone the repository if possible in the temporary directory of the user
-    pub fn from_git(remote: &str, sub_dir: Option<&str>) -> Result<Template> {
+    pub fn from_git(remote: &str, directory: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
         tmp.push(remote.split('/').last().unwrap_or("kickstart"));
@@ -50,12 +50,12 @@ impl Template {
             .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
-        Ok(Template::from_local(&tmp, sub_dir))
+        Ok(Template::from_local(&tmp, directory))
     }
 
-    pub fn from_local(path: &Path, sub_dir: Option<&str>) -> Template {
+    pub fn from_local(path: &Path, directory: Option<&str>) -> Template {
         let mut buf = path.to_path_buf();
-        if let Some(dir) = sub_dir {
+        if let Some(dir) = directory {
             buf.push(dir);
         }
         Template { path: buf }
@@ -199,7 +199,7 @@ mod tests {
         let tpl = Template::from_input("examples/with-directory", None).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf(), true);
         assert!(res.is_ok());
-        assert!(dir.path().join("Hello").join("Howdy.py").exists());
+        assert!(dir.path().join("template_root").join("Howdy.py").exists());
     }
 
     #[test]
