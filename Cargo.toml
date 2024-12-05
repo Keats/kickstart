@@ -18,9 +18,8 @@ heck = "0.5"
 term = "1"
 toml = "0.8"
 walkdir = "2"
-
-[dev-dependencies]
 tempfile = "3"
+
 
 [badges]
 maintenance = {status = "actively-developed"}

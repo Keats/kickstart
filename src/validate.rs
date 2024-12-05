@@ -14,6 +14,9 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
     let mut errs = vec![];
     let mut types = HashMap::new();
 
+    // TODO: check the hooks files exists and are executable
+    // TODO: validate glob patterns
+
     for var in &def.variables {
         let type_str = var.default.type_str();
         types.insert(var.name.to_string(), type_str);

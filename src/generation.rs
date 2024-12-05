@@ -1,23 +1,50 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs::{self, File};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str;
 
 use glob::Pattern;
+use tempfile::NamedTempFile;
 use tera::Context;
+use toml::Value;
 use walkdir::WalkDir;
 
-use crate::definition::TemplateDefinition;
+use crate::definition::{Hook, TemplateDefinition};
 use crate::errors::{map_io_err, new_error, ErrorKind, Result};
 use crate::utils::{
     create_directory, get_source, is_binary, read_file, render_one_off_template, write_file, Source,
 };
 
+/// Contains information about a given hook: what's the original path and what's the path
+/// to the templated version
+#[derive(Debug)]
+pub struct HookFile {
+    original_path: PathBuf,
+    file: NamedTempFile,
+}
+
+impl HookFile {
+    /// The hook original path in the template folder
+    pub fn original_path(&self) -> &Path {
+        self.original_path.as_path()
+    }
+
+    /// The rendered hook file, this is what you want to execute.
+    pub fn path(&self) -> &Path {
+        self.file.path()
+    }
+}
+
 /// The current template being generated
 #[derive(Debug, PartialEq)]
 pub struct Template {
+    /// The parsed template definition
+    pub definition: TemplateDefinition,
+    /// The variables set by the user, either interactively or through the library
+    variables: HashMap<String, Value>,
     /// Local path to the template folder
     path: PathBuf,
 }
@@ -29,7 +56,7 @@ impl Template {
     pub fn from_input(input: &str, directory: Option<&str>) -> Result<Template> {
         match get_source(input) {
             Source::Git(remote) => Template::from_git(&remote, directory),
-            Source::Local(path) => Ok(Template::from_local(&path, directory)),
+            Source::Local(path) => Template::from_local(&path, directory),
         }
     }
 
@@ -50,22 +77,15 @@ impl Template {
             .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
-        Ok(Template::from_local(&tmp, directory))
+        Template::from_local(&tmp, directory)
     }
 
-    pub fn from_local(path: &Path, directory: Option<&str>) -> Template {
+    pub fn from_local(path: &Path, directory: Option<&str>) -> Result<Template> {
         let mut buf = path.to_path_buf();
         if let Some(dir) = directory {
             buf.push(dir);
         }
-        Template { path: buf }
-    }
-
-    /// Generate the template at the given output directory
-    pub fn generate(&self, output_dir: &Path, no_input: bool) -> Result<()> {
-        let output_dir = output_dir.canonicalize()?;
-        // Get the variables from the user first
-        let conf_path = self.path.join("template.toml");
+        let conf_path = buf.join("template.toml");
         if !conf_path.exists() {
             return Err(new_error(ErrorKind::MissingTemplateDefinition));
         }
@@ -73,9 +93,67 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
-        let variables = definition.ask_questions(no_input)?;
+        Ok(Template { path: buf, definition, variables: HashMap::new() })
+    }
+
+    /// Overwrites the variables for the template
+    pub fn set_variables(&mut self, variables: HashMap<String, Value>) {
+        self.variables = variables;
+    }
+
+    fn get_hooks(&self, hooks: &[Hook]) -> Result<Vec<HookFile>> {
         let mut context = Context::new();
-        for (key, val) in &variables {
+        for (key, val) in &self.variables {
+            context.insert(key, val);
+        }
+
+        let mut hooks_files = Vec::new();
+
+        for hook in hooks {
+            // First we check whether we need to run it or not
+            if let Some(cond) = &hook.only_if {
+                if let Some(val) = self.variables.get(&cond.name) {
+                    if *val != cond.value {
+                        continue;
+                    }
+                } else {
+                    // Not having it means we didn't even ask the question
+                    continue;
+                }
+            }
+
+            // Then we will read the content of the file and run it through Tera
+            let content = read_file(&hook.path)?;
+            let rendered = render_one_off_template(&content, &context, Some(hook.path.clone()))?;
+
+            // Then we save it in a temporary file
+            let mut file = NamedTempFile::new()?;
+            write!(file, "{}", rendered)?;
+            hooks_files.push(HookFile { file, original_path: hook.path.clone() });
+        }
+
+        Ok(hooks_files)
+    }
+
+    /// Returns the paths of the hooks that need to be ran in the pre-gen step.
+    /// The path will point to a temporary file and not the path of the template as it will
+    /// be templated.
+    pub fn get_pre_gen_hooks(&self) -> Result<Vec<HookFile>> {
+        self.get_hooks(&self.definition.pre_gen_hooks)
+    }
+
+    /// Returns the paths of the hooks that need to be ran in the post-gen step.
+    /// The path will point to a temporary file and not the path of the template as it will
+    /// be templated.
+    pub fn get_post_gen_hooks(&self) -> Result<Vec<HookFile>> {
+        self.get_hooks(&self.definition.post_gen_hooks)
+    }
+
+    /// Generate the template at the given output directory
+    pub fn generate(&self, output_dir: &Path, variables: &HashMap<String, Value>) -> Result<()> {
+        let output_dir = output_dir.canonicalize()?;
+        let mut context = Context::new();
+        for (key, val) in variables {
             context.insert(key, val);
         }
 
@@ -84,8 +162,8 @@ impl Template {
         }
 
         // Create the glob patterns of files to copy without rendering first, only once
-        let mut patterns = Vec::with_capacity(definition.copy_without_render.len());
-        for s in &definition.copy_without_render {
+        let mut patterns = Vec::with_capacity(self.definition.copy_without_render.len());
+        for s in &self.definition.copy_without_render {
             let rendered = render_one_off_template(s, &context, None)?;
             match Pattern::new(&rendered) {
                 Ok(p) => patterns.push(p),
@@ -99,7 +177,7 @@ impl Template {
             };
         }
 
-        let start_path = if let Some(ref directory) = definition.directory {
+        let start_path = if let Some(ref directory) = self.definition.directory {
             self.path.join(directory)
         } else {
             self.path.clone()
@@ -122,7 +200,7 @@ impl Template {
 
         'outer: for entry in walker {
             // Skip root folder and the template.toml
-            if entry.path() == self.path || entry.path() == conf_path {
+            if entry.path() == self.path || entry.path() == self.path.join("template.toml") {
                 continue;
             }
 
@@ -131,7 +209,7 @@ impl Template {
                 continue;
             }
             let path_str = format!("{}", path.display());
-            for ignored in &definition.ignore {
+            for ignored in &self.definition.ignore {
                 if ignored == &path_str || path_str.starts_with(ignored) {
                     continue 'outer;
                 }
@@ -169,7 +247,7 @@ impl Template {
             write_file(&real_path, &contents)?;
         }
 
-        for cleanup in &definition.cleanup {
+        for cleanup in &self.definition.cleanup {
             if let Some(val) = variables.get(&cleanup.name) {
                 if *val == cleanup.value {
                     for p in &cleanup.paths {
@@ -203,8 +281,9 @@ mod tests {
     fn can_generate_from_local_path() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/complex", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
-        println!("{res:?}");
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
+
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -214,7 +293,8 @@ mod tests {
     fn can_generate_from_local_path_with_directory() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/with-directory", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
         assert!(res.is_ok());
         assert!(dir.path().join("template_root").join("Howdy.py").exists());
     }
@@ -223,7 +303,8 @@ mod tests {
     fn can_generate_from_local_path_with_directory_param() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("./", Some("examples/complex")).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -233,8 +314,9 @@ mod tests {
     fn can_generate_from_remote_repo() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
-        println!("{:?}", res);
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
+
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
         assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
@@ -246,8 +328,9 @@ mod tests {
         let tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
-        println!("{:?}", res);
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
+
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -257,7 +340,8 @@ mod tests {
     fn can_generate_handling_slugify() {
         let dir = tempdir().unwrap();
         let tpl = Template::from_input("examples/slugify", None).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf(), true);
+        let res =
+            tpl.generate(&dir.path().to_path_buf(), &tpl.definition.default_values().unwrap());
         assert!(res.is_ok());
         assert!(!dir.path().join("template.toml").exists());
         assert!(dir.path().join("hello.md").exists());

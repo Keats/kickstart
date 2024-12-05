@@ -1,16 +1,16 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use serde::Deserialize;
 use tera::Context;
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
-use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 use crate::utils::render_one_off_template;
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct VariableCondition {
+pub struct Condition {
     pub name: String,
     pub value: Value,
 }
@@ -37,11 +37,23 @@ pub struct Variable {
     /// A regex pattern to validate the input
     pub validation: Option<String>,
     /// Only ask this variable if that condition is true
-    pub only_if: Option<VariableCondition>,
+    pub only_if: Option<Condition>,
+}
+
+/// A hook that should be ran
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Hook {
+    /// The display name for that hook
+    pub name: String,
+    /// The path to the executable file
+    pub path: PathBuf,
+    /// Only run this hook if that condition is true
+    pub only_if: Option<Condition>,
 }
 
 /// The full template struct we get fom loading a TOML file
 #[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateDefinition {
     /// Name of the template
     pub name: String,
@@ -72,19 +84,21 @@ pub struct TemplateDefinition {
     /// http://cookiecutter.readthedocs.io/en/latest/advanced/copy_without_render.html
     #[serde(default)]
     pub copy_without_render: Vec<String>,
+    /// Hooks that should be ran after collecting all variables but before generating the template
+    #[serde(default)]
+    pub pre_gen_hooks: Vec<Hook>,
+    /// Hooks that should be ran after generating the template
+    #[serde(default)]
+    pub post_gen_hooks: Vec<Hook>,
     /// All the questions for that template
     pub variables: Vec<Variable>,
 }
 
 impl TemplateDefinition {
-    /// Ask all the questions of that template and return the answers.
-    /// If `no_input` is `true`, it will automatically pick the default without
-    /// prompting the user
-    pub fn ask_questions(&self, no_input: bool) -> Result<HashMap<String, Value>> {
-        // Tera context doesn't expose a way to get value from a context
-        // so we store them in another hashmap
+    /// Returns the default values for all the variables that have one while following conditions
+    /// TODO: probably remove that fn? see how to test things
+    pub fn default_values(&self) -> Result<HashMap<String, Value>> {
         let mut vals = HashMap::new();
-
         for var in &self.variables {
             // Skip the question if the value is different from the condition
             if let Some(ref cond) = var.only_if {
@@ -98,51 +112,20 @@ impl TemplateDefinition {
                 }
             }
 
-            if let Some(ref choices) = var.choices {
-                let res = if no_input {
-                    var.default.clone()
-                } else {
-                    ask_choices(&var.prompt, &var.default, choices)?
-                };
-                vals.insert(var.name.clone(), res);
-                continue;
-            }
-
             match &var.default {
                 Value::Boolean(b) => {
-                    let res = if no_input { *b } else { ask_bool(&var.prompt, *b)? };
-                    vals.insert(var.name.clone(), Value::Boolean(res));
-                    continue;
+                    vals.insert(var.name.clone(), Value::Boolean(*b));
                 }
                 Value::String(s) => {
-                    let default_value = if s.contains("{{") && s.contains("}}") {
-                        let mut context = Context::new();
-                        for (key, val) in &vals {
-                            context.insert(key, val);
-                        }
-
-                        let rendered_default = render_one_off_template(s, &context, None);
-                        match rendered_default {
-                            Err(e) => return Err(e),
-                            Ok(v) => v,
-                        }
-                    } else {
-                        s.clone()
-                    };
-
-                    let res = if no_input {
-                        default_value
-                    } else {
-                        ask_string(&var.prompt, &default_value, &var.validation)?
-                    };
-
-                    vals.insert(var.name.clone(), Value::String(res));
-                    continue;
+                    let mut context = Context::new();
+                    for (key, val) in &vals {
+                        context.insert(key, val);
+                    }
+                    let rendered_default = render_one_off_template(s, &context, None)?;
+                    vals.insert(var.name.clone(), Value::String(rendered_default));
                 }
                 Value::Integer(i) => {
-                    let res = if no_input { *i } else { ask_integer(&var.prompt, *i)? };
-                    vals.insert(var.name.clone(), Value::Integer(res));
-                    continue;
+                    vals.insert(var.name.clone(), Value::Integer(*i));
                 }
                 _ => return Err(new_error(ErrorKind::InvalidTemplate)),
             }
@@ -189,7 +172,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
     }
 
@@ -208,7 +191,7 @@ mod tests {
 
             [[variables]]
             name = "database"
-            default = "postgres"
+            default = "mysql"
             prompt = "Which database to use?"
             choices = ["postgres", "mysql"]
 
@@ -217,14 +200,14 @@ mod tests {
             prompt = "Which version of Postgres?"
             default = "10.4"
             choices = ["10.4", "9.3"]
-            only_if = { name = "database", value = "mysql" }
+            only_if = { name = "database", value = "postgres" }
 
         "#,
         )
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
@@ -266,7 +249,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 4);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
@@ -301,7 +284,7 @@ mod tests {
 
         assert_eq!(tpl.variables.len(), 3);
 
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
 
         assert!(res.is_ok());
         let res = res.unwrap();
