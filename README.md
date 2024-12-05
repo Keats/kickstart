@@ -112,6 +112,25 @@ cleanup = [
     { name = "auth_method", value = "none", paths = ["{{ project_name }}/docs/auth.md"]},
 ]
 
+# A list of hooks we can run at various stages of the template.
+# This will execute the given files in the given order and they will be templated with access to all the variables.
+# Hooks can also be run conditionally depending on a variable value.
+# If a hook is meant to fail, make sure to exit with a non 0 error code.
+# The files need to be executable, no restrictions otherwise. It can be python, bash, bat etc.
+
+# pre-gen hooks are run after all the questions have been answered. This can be used for example to do more complex
+# validations
+pre_gen_hooks = [
+    { name = "validate", path = "validate_vars.py" },
+]
+
+# post-gen hooks are run after the generation is done. This can be used for additional cleanup or running other things
+# like `git init`, install git hooks, downloading dependencies etc
+post_gen_hooks = [
+    { name = "finish setup", path = "finish_setup.sh" },
+    { name = "install frontend dependencies", path = "install_spa_deps.sh", only_if = { name = "spa", value = true} },
+]
+
 # A list of variables, the schema is explained in detail below
 [[variables]]
 name = "project_name"
