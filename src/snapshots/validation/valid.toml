@@ -1,0 +1,21 @@
+name = "Test template"
+description = "A description"
+kickstart_version = 2
+
+[[variables]]
+name = "project_name"
+default = "My project"
+prompt = "What's the name of your project?"
+
+[[variables]]
+name = "database"
+default = "postgres"
+prompt = "Which database to use?"
+choices = ["postgres", "mysql"]
+
+[[variables]]
+name = "pg_version"
+prompt = "Which version of Postgres?"
+default = "10.4"
+choices = ["10.4", "9.3"]
+only_if = { name = "database", value = "postgres" }

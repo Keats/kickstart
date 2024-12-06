@@ -1,0 +1,9 @@
+---
+source: src/definition.rs
+expression: "&errs"
+input_file: src/snapshots/validation/unsupported_type.toml
+---
+[
+    "Variable `project_name` has a default of type float, which isn't allowed",
+    "Variable `project_name` has a validation regex but is not a string",
+]

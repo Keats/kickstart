@@ -20,6 +20,12 @@ toml = "0.8"
 walkdir = "2"
 tempfile = "3"
 
+[dev-dependencies]
+insta = { version = "1.38.0", features = ["glob"] }
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
 
 [badges]
 maintenance = {status = "actively-developed"}
