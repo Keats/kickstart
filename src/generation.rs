@@ -206,6 +206,7 @@ impl Template {
                 let relative_path = e.path().strip_prefix(&start_path).expect("Stripping prefix");
                 if relative_path.starts_with(".git/")
                     || (relative_path.is_dir() && relative_path.starts_with(".git"))
+                    || e.path().canonicalize().expect("to canonicalize").starts_with(&output_dir)
                 {
                     return false;
                 }
