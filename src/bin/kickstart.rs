@@ -154,7 +154,8 @@ fn execute_hook(hook: &HookFile) -> Result<()> {
             if code.success() {
                 Ok(())
             } else {
-                let err: Box<dyn Error> = format!("Hook `{}` exited with a non 0 code\n", hook.name()).into();
+                let err: Box<dyn Error> =
+                    format!("Hook `{}` exited with a non 0 code\n", hook.name()).into();
                 bail(&*err)
             }
         }
