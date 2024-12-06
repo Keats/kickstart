@@ -1,3 +1,4 @@
+use glob::Pattern;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -14,8 +15,18 @@ pub fn validate_definition(def: &TemplateDefinition) -> Vec<String> {
     let mut errs = vec![];
     let mut types = HashMap::new();
 
-    // TODO: check the hooks files exists and are executable
-    // TODO: validate glob patterns
+    for pattern in &def.copy_without_render {
+        if let Err(e) = Pattern::new(pattern) {
+            errs.push(format!("In copy_without_render, `{pattern}` is not a valid pattern: {e}"));
+        }
+    }
+
+    for hook in def.all_hooks_paths() {
+        let p = Path::new(&hook);
+        if !p.exists() {
+            errs.push(format!("Hook file `{}` was not found", hook));
+        }
+    }
 
     for var in &def.variables {
         let type_str = var.default.type_str();
