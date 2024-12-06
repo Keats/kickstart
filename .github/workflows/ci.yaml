@@ -37,9 +37,9 @@ jobs:
         run: cargo test
       - name: run all examples
         run: |
-          cargo run -- examples/hooks/ --no-input
-          cargo run -- examples/complex/ --no-input
-          cargo run -- examples/default-from-variable/ --no-input
-          cargo run -- examples/slugify/ --no-input
-          cargo run -- examples/super-basic/ --no-input
-          cargo run -- examples/with-directory/ --no-input
+          cargo run -- examples/hooks/ --no-input -o hooks
+          cargo run -- examples/complex/ --no-input -o complex
+          cargo run -- examples/default-from-variable/ --no-input -o default
+          cargo run -- examples/slugify/ --no-input -o slugify
+          cargo run -- examples/super-basic/ --no-input -o super-basic
+          cargo run -- examples/with-directory/ --no-input -o with-directory
