@@ -13,8 +13,6 @@ mod generation;
 pub mod prompt;
 pub mod terminal;
 pub mod utils;
-mod validate;
 
 pub use definition::TemplateDefinition;
 pub use generation::{HookFile, Template};
-pub use validate::validate_file;

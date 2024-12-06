@@ -10,7 +10,6 @@ use toml::Value;
 use kickstart::errors::{new_error, ErrorKind, Result};
 use kickstart::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 use kickstart::utils::render_one_off_template;
-use kickstart::validate_file;
 use kickstart::Template;
 use kickstart::TemplateDefinition;
 use kickstart::{terminal, HookFile};
@@ -168,7 +167,7 @@ fn main() {
 
     match cli.command {
         Some(Command::Validate { path }) => {
-            let errs = bail_if_err!(validate_file(path));
+            let errs = bail_if_err!(TemplateDefinition::validate_file(path));
 
             if !errs.is_empty() {
                 terminal::error("The template.toml is invalid:\n");

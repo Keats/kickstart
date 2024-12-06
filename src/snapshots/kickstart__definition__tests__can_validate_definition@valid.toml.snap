@@ -1,0 +1,6 @@
+---
+source: src/definition.rs
+expression: "&errs"
+input_file: src/snapshots/validation/valid.toml
+---
+[]

@@ -1,14 +1,14 @@
+use glob::Pattern;
+use regex::Regex;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use tera::Context;
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
-use crate::utils::render_one_off_template;
-
-pub(crate) const CURRENT_VERSION: u8 = 2;
+use crate::utils::{read_file, render_one_off_template};
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -105,6 +105,114 @@ impl TemplateDefinition {
             .collect()
     }
 
+    /// Go through the template.toml and finds all errors such as invalid globs/regex,
+    /// missing/invalid default variable, bad conditions.
+    /// If this returns an empty vec, this means the file is valid.
+    pub fn validate(&self) -> Vec<String> {
+        let mut errs = vec![];
+        let mut types = HashMap::new();
+
+        for pattern in &self.copy_without_render {
+            if let Err(e) = Pattern::new(pattern) {
+                errs.push(format!(
+                    "In copy_without_render, `{pattern}` is not a valid pattern: {e}"
+                ));
+            }
+        }
+
+        for hook in self.all_hooks_paths() {
+            let p = Path::new(&hook);
+            if !p.exists() {
+                errs.push(format!("Hook file `{}` was not found", hook));
+            }
+        }
+
+        for var in &self.variables {
+            let type_str = var.default.type_str();
+            types.insert(var.name.to_string(), type_str);
+
+            match var.default {
+                Value::String(_) | Value::Integer(_) | Value::Boolean(_) => (),
+                _ => {
+                    errs.push(format!(
+                        "Variable `{}` has a default of type {}, which isn't allowed",
+                        var.name, type_str
+                    ));
+                }
+            }
+
+            if let Some(ref choices) = var.choices {
+                let mut choice_found = false;
+                for c in choices {
+                    if *c == var.default {
+                        choice_found = true;
+                    }
+                }
+                if !choice_found {
+                    errs.push(format!(
+                        "Variable `{}` has `{}` as default, which isn't in the choices",
+                        var.name, var.default
+                    ));
+                }
+            }
+
+            // Since variables are ordered, we can detect whether the only_if is referring
+            // to an unknown variable or a variable of the wrong type
+            if let Some(ref cond) = var.only_if {
+                if let Some(ref t) = types.get(&cond.name) {
+                    if **t != cond.value.type_str() {
+                        errs.push(format!(
+                            "Variable `{}` depends on `{}={}`, but the type of `{}` is {}",
+                            var.name, cond.name, cond.value, cond.name, t
+                        ));
+                    }
+                } else {
+                    errs.push(format!(
+                        "Variable `{}` depends on `{}`, which wasn't asked",
+                        var.name, cond.name
+                    ));
+                }
+            }
+
+            if let Some(ref pattern) = var.validation {
+                if !var.default.is_str() {
+                    errs.push(format!(
+                        "Variable `{}` has a validation regex but is not a string",
+                        var.name
+                    ));
+                    continue;
+                }
+
+                match Regex::new(pattern) {
+                    Ok(re) => {
+                        if !re.is_match(var.default.as_str().unwrap()) {
+                            errs.push(format!(
+                                "Variable `{}` has a default that doesn't pass its validation regex",
+                                var.name
+                            ));
+                        }
+                    }
+                    Err(_) => {
+                        errs.push(format!(
+                            "Variable `{}` has an invalid validation regex: {}",
+                            var.name, pattern
+                        ));
+                    }
+                }
+            }
+        }
+
+        errs
+    }
+
+    /// Takes a path to a `template.toml` file and validates it
+    pub fn validate_file<T: AsRef<Path>>(path: T) -> Result<Vec<String>> {
+        let definition: TemplateDefinition = toml::from_str(&read_file(path.as_ref())?)
+            .map_err(|err| new_error(ErrorKind::Toml { err }))?;
+
+        Ok(definition.validate())
+    }
+
     /// Returns the default values for all the variables that have one while following conditions
     /// TODO: probably remove that fn? see how to test things
     pub fn default_values(&self) -> Result<HashMap<String, Value>> {
@@ -150,6 +258,14 @@ mod tests {
     use toml;
 
     use super::*;
+
+    #[test]
+    fn can_validate_definition() {
+        insta::glob!("snapshots/validation/*.toml", |path| {
+            let errs = TemplateDefinition::validate_file(&path).unwrap();
+            insta::assert_debug_snapshot!(&errs);
+        });
+    }
 
     #[test]
     fn can_load_template_and_work_with_no_input() {
