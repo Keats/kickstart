@@ -1,7 +1,7 @@
 # kickstart
 
 A CLI tool to easily get a new project up and running by using pre-made templates.
-This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/audreyr/cookiecutter). It is an alternative to NodeJS projects such as [Yeoman](https://yeoman.io/) or [Slush](https://github.com/slushjs/slush).
+This is a slightly more powerful version of an equivalent tool in Python, [cookiecutter](https://github.com/cookiecutter/cookiecutter). It is an alternative to NodeJS projects such as [Yeoman](https://yeoman.io/) or [Slush](https://github.com/slushjs/slush).
 
 [![Crates.io](https://img.shields.io/crates/v/kickstart.svg)](https://crates.io/crates/kickstart)
 
@@ -25,7 +25,7 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - Single binary: no need to install a virtualenv or anything else
 - Simple to use
 - Directory names and filenames can be templated: `{{ repo_name }}/{{author}}.md` is a valid path
-- All templating done through [Tera](https://tera.netlify.com/docs/) - a template engine inspired by Jinja2
+- All templating done through [Tera][] - a template engine inspired by Jinja2
 - Choose your own adventure: it supports conditional questions based on previous answers
 - It can load templates from a local directory or from a Git repository
 - It has conditional cleanup to not let irrelevant files in the output directory after generation
@@ -34,12 +34,13 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 
 The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
 
-[builtin]: https://tera.netlify.com/docs/#built-in-filters
-
 Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
 by using the `$$` separator instead.
 
 Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
+
+[tera]: https://keats.github.io/tera/docs/
+[builtin]: https://keats.github.io/tera/docs/#built-in-filters
 
 ## Try it out
 
