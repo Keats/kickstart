@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+use std::process::Command as StdCommand;
 
 use clap::{Parser, Subcommand};
 use tera::Context;
@@ -34,6 +35,10 @@ pub struct Cli {
     /// Do not prompt for variables and only use the defaults from template.toml
     #[clap(long, default_value_t = false)]
     pub no_input: bool,
+
+    /// Whether to run the hooks
+    #[clap(long, default_value_t = true)]
+    pub run_hooks: bool,
 
     #[clap(subcommand)]
     pub command: Option<Command>,
@@ -143,7 +148,9 @@ macro_rules! bail_if_err {
 }
 
 fn execute_hook(hook: &HookFile) -> Result<()> {
-    todo!("write me")
+    terminal::bold(&format!("  - {}\n", hook.name()));
+    StdCommand::new(hook.path()).status().expect("sh command failed to start");
+    Ok(())
 }
 
 fn main() {
@@ -164,24 +171,37 @@ fn main() {
             }
         }
         None => {
-            let template = bail_if_err!(Template::from_input(
+            let mut template = bail_if_err!(Template::from_input(
                 &cli.template.unwrap(),
                 cli.directory.as_deref()
             ));
 
             // 1. ask questions
             let variables = bail_if_err!(ask_questions(&template.definition, cli.no_input));
+            template.set_variables(variables);
 
             // 2. run pre-gen hooks
             let pre_gen_hooks = bail_if_err!(template.get_pre_gen_hooks());
-            if !pre_gen_hooks.is_empty() {}
+            if cli.run_hooks && !pre_gen_hooks.is_empty() {
+                terminal::bold("Running pre-gen hooks...\n");
+                for hook in &pre_gen_hooks {
+                    execute_hook(hook).expect("todo handle error")
+                }
+                println!();
+            }
 
             // 3. generate
-            bail_if_err!(template.generate(&cli.output_dir, &variables));
+            bail_if_err!(template.generate(&cli.output_dir));
 
             // 4. run post-gen hooks
             let post_gen_hooks = bail_if_err!(template.get_post_gen_hooks());
-            if !post_gen_hooks.is_empty() {}
+            if cli.run_hooks && !post_gen_hooks.is_empty() {
+                terminal::bold("Running post-gen hooks...\n");
+                for hook in &post_gen_hooks {
+                    execute_hook(hook).expect("todo handle error")
+                }
+                println!();
+            }
 
             terminal::success("\nEverything done, ready to go!\n");
         }

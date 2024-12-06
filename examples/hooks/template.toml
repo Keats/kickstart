@@ -1,0 +1,26 @@
+name = "Super basic"
+description = "A very simple template"
+kickstart_version = 1
+
+pre_gen_hooks = [
+    { name = "can run python scripts", path = "do_stuff.py" },
+]
+
+post_gen_hooks = [
+    { name = "greeting", path = "greet.sh" },
+]
+
+[[variables]]
+name = "directory_name"
+default = "Hello"
+prompt = "Directory name?"
+
+[[variables]]
+name = "file_name"
+default = "Howdy"
+prompt = "File name?"
+
+[[variables]]
+name = "greeting_recipient"
+default = "Vincent"
+prompt = "Who am I greeting?"
