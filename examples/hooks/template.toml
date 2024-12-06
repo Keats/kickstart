@@ -1,7 +1,14 @@
 name = "Super basic"
 description = "A very simple template"
 kickstart_version = 1
-directory = "template_root"
+
+pre_gen_hooks = [
+    { name = "can run python scripts", path = "do_stuff.py" },
+]
+
+post_gen_hooks = [
+    { name = "greeting", path = "greet.py" },
+]
 
 [[variables]]
 name = "directory_name"

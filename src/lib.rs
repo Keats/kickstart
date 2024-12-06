@@ -9,8 +9,10 @@
 mod definition;
 pub mod errors;
 mod filters;
-pub mod generation;
-mod prompt;
+mod generation;
+pub mod prompt;
 pub mod terminal;
-mod utils;
-pub mod validate;
+pub mod utils;
+
+pub use definition::TemplateDefinition;
+pub use generation::{HookFile, Template};

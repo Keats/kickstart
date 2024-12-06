@@ -37,7 +37,8 @@ The main drawback compared to cookiecutter is the lack of hook scripts support, 
 Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
 by using the `$$` separator instead.
 
-Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
+Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. 
+Keep in mind the characters `()` are not allowed on Windows so do not use filter parameters if you want to be cross-platform.
 
 [tera]: https://keats.github.io/tera/docs/
 [builtin]: https://keats.github.io/tera/docs/#built-in-filters
@@ -59,20 +60,26 @@ Creating a template is fairly simple: create files and then just add a `template
 ```toml
 # Required, name of the template
 name = "Django"
+
 # Optional, longer form description
 description = "A fully-featured Django template"
+
 # Required, the version of the kickstart schema, currently only `1` is used
 kickstart_version = 1
+
 # Optional, the URL of the template
 url = "https://google.com"
+
 # Optional, a list of authors for this template
 authors = [
 
 ]
+
 # Optional, a list of keywords for this template
 keywords = [
 
 ]
+
 # Optional, those files will NOT be copied over when generating the template
 # Use it to remove template-specific like its CI or its README/docs
 ignore = [
@@ -81,15 +88,20 @@ ignore = [
     ".travis.yml",
     "docs",
 ]
+
 # If this is set, kickstart will use this directory as a base for the template instead of
 # the root directory. This is useful when your template has its own documentation/CI/etc and you don't want
 # to ignore it.
 directory = "some-directory"
+
 # Optional, a list of patterns. All files matching one of the patterns will
 # be copied over without going through Tera.
-# Use it for files that contain syntax similar to Tera for example
+# If you want to match a specific file in the template, you can refer to it directly with its template relative path
+# Use it for files that contain syntax similar to Tera for example.
+# The patterns themselves can be templated.
 copy_without_render = [
     "*.html",
+    "{{project_name}}/something.html",
 ]
 
 # Optional, a list of cleanup actions to do.
@@ -98,6 +110,26 @@ copy_without_render = [
 cleanup = [
     { name = "spa", value = true, paths = ["{{ project_name }}/templates/"]},
     { name = "auth_method", value = "none", paths = ["{{ project_name }}/docs/auth.md"]},
+]
+
+# A list of hooks we can run at various stages of the template.
+# This will execute the given files in the given order and they will be templated with access to all the variables.
+# Hooks can also be run conditionally depending on a variable value.
+# If a hook is meant to fail, make sure to exit with a non 0 error code.
+# The files need to be executable, no restrictions otherwise. It can be python, bash, bat etc.
+# Hooks are automatically ignored, no need to add them to the ignore array
+
+# pre-gen hooks are run after all the questions have been answered. This can be used for example to do more complex
+# validations
+pre_gen_hooks = [
+    { name = "validate", path = "validate_vars.py" },
+]
+
+# post-gen hooks are run after the generation is done. This can be used for additional cleanup or running other things
+# like `git init`, install git hooks, downloading dependencies etc
+post_gen_hooks = [
+    { name = "finish setup", path = "finish_setup.sh" },
+    { name = "install frontend dependencies", path = "install_spa_deps.sh", only_if = { name = "spa", value = true} },
 ]
 
 # A list of variables, the schema is explained in detail below
@@ -168,7 +200,8 @@ only_if = { name = "spa", value = true }
 A variable has the following required fields:
 
 - `name`: the name of the variable in Tera context
-- `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported)
+- `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported). 
+You can use previous variables in the default, eg `"{{ project_name | lower }}"` will replace `project_name` with the value of the variable.
 - `prompt`: the text to display to the user
 
 And three more optional fields:
@@ -194,6 +227,15 @@ Case conversion filters are provided (_via [heck](https://github.com/withoutboat
 You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
+
+### 0.5.0 (unreleased)
+
+- The `sub-dir` parameter has been renamed to `directory` in the CLI
+- Templates with a `directory` field will now no longer include that directory name in the output
+- `copy_without_render` elements are now templated and refer to the template relative path if specified
+- Avoid path traversals in cleanup
+- Add pre-gen and post-gen hooks
+- Force `output-dir` to be selected in the CLI to avoid surprises
 
 ### 0.4.0 (2023-08-02)
 

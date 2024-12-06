@@ -1,0 +1,8 @@
+---
+source: src/definition.rs
+expression: "&errs"
+input_file: src/snapshots/validation/only_if_unknown_var.toml
+---
+[
+    "Variable `pg_version` depends on `database`, which wasn't asked",
+]

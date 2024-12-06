@@ -1,16 +1,18 @@
+use glob::Pattern;
+use regex::Regex;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use tera::Context;
 use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
-use crate::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
-use crate::utils::render_one_off_template;
+use crate::utils::{read_file, render_one_off_template};
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct VariableCondition {
+pub struct Condition {
     pub name: String,
     pub value: Value,
 }
@@ -36,12 +38,24 @@ pub struct Variable {
     pub choices: Option<Vec<Value>>,
     /// A regex pattern to validate the input
     pub validation: Option<String>,
-    /// Only ask this variable is the condition is true
-    pub only_if: Option<VariableCondition>,
+    /// Only ask this variable if that condition is true
+    pub only_if: Option<Condition>,
+}
+
+/// A hook that should be ran
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Hook {
+    /// The display name for that hook
+    pub name: String,
+    /// The path to the executable file
+    pub path: PathBuf,
+    /// Only run this hook if that condition is true
+    pub only_if: Option<Condition>,
 }
 
 /// The full template struct we get fom loading a TOML file
 #[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateDefinition {
     /// Name of the template
     pub name: String,
@@ -50,7 +64,7 @@ pub struct TemplateDefinition {
     /// Template version
     pub version: Option<String>,
     /// Version of the kickstart template spec
-    pub kickstart_version: usize,
+    pub kickstart_version: u8,
     /// Url of the template
     pub url: Option<String>,
     /// A list of the authors
@@ -72,19 +86,137 @@ pub struct TemplateDefinition {
     /// http://cookiecutter.readthedocs.io/en/latest/advanced/copy_without_render.html
     #[serde(default)]
     pub copy_without_render: Vec<String>,
+    /// Hooks that should be ran after collecting all variables but before generating the template
+    #[serde(default)]
+    pub pre_gen_hooks: Vec<Hook>,
+    /// Hooks that should be ran after generating the template
+    #[serde(default)]
+    pub post_gen_hooks: Vec<Hook>,
     /// All the questions for that template
     pub variables: Vec<Variable>,
 }
 
 impl TemplateDefinition {
-    /// Ask all the questions of that template and return the answers.
-    /// If `no_input` is `true`, it will automatically pick the default without
-    /// prompting the user
-    pub fn ask_questions(&self, no_input: bool) -> Result<HashMap<String, Value>> {
-        // Tera context doesn't expose a way to get value from a context
-        // so we store them in another hashmap
-        let mut vals = HashMap::new();
+    pub(crate) fn all_hooks_paths(&self) -> Vec<String> {
+        self.pre_gen_hooks
+            .iter()
+            .chain(self.post_gen_hooks.iter())
+            .map(|h| format!("{}", h.path.display()))
+            .collect()
+    }
 
+    /// Go through the template.toml and finds all errors such as invalid globs/regex,
+    /// missing/invalid default variable, bad conditions.
+    /// If this returns an empty vec, this means the file is valid.
+    pub fn validate(&self) -> Vec<String> {
+        let mut errs = vec![];
+        let mut types = HashMap::new();
+
+        for pattern in &self.copy_without_render {
+            if let Err(e) = Pattern::new(pattern) {
+                errs.push(format!(
+                    "In copy_without_render, `{pattern}` is not a valid pattern: {e}"
+                ));
+            }
+        }
+
+        for hook in self.all_hooks_paths() {
+            let p = Path::new(&hook);
+            if !p.exists() {
+                errs.push(format!("Hook file `{}` was not found", hook));
+            }
+        }
+
+        for var in &self.variables {
+            let type_str = var.default.type_str();
+            types.insert(var.name.to_string(), type_str);
+
+            match var.default {
+                Value::String(_) | Value::Integer(_) | Value::Boolean(_) => (),
+                _ => {
+                    errs.push(format!(
+                        "Variable `{}` has a default of type {}, which isn't allowed",
+                        var.name, type_str
+                    ));
+                }
+            }
+
+            if let Some(ref choices) = var.choices {
+                let mut choice_found = false;
+                for c in choices {
+                    if *c == var.default {
+                        choice_found = true;
+                    }
+                }
+                if !choice_found {
+                    errs.push(format!(
+                        "Variable `{}` has `{}` as default, which isn't in the choices",
+                        var.name, var.default
+                    ));
+                }
+            }
+
+            // Since variables are ordered, we can detect whether the only_if is referring
+            // to an unknown variable or a variable of the wrong type
+            if let Some(ref cond) = var.only_if {
+                if let Some(ref t) = types.get(&cond.name) {
+                    if **t != cond.value.type_str() {
+                        errs.push(format!(
+                            "Variable `{}` depends on `{}={}`, but the type of `{}` is {}",
+                            var.name, cond.name, cond.value, cond.name, t
+                        ));
+                    }
+                } else {
+                    errs.push(format!(
+                        "Variable `{}` depends on `{}`, which wasn't asked",
+                        var.name, cond.name
+                    ));
+                }
+            }
+
+            if let Some(ref pattern) = var.validation {
+                if !var.default.is_str() {
+                    errs.push(format!(
+                        "Variable `{}` has a validation regex but is not a string",
+                        var.name
+                    ));
+                    continue;
+                }
+
+                match Regex::new(pattern) {
+                    Ok(re) => {
+                        if !re.is_match(var.default.as_str().unwrap()) {
+                            errs.push(format!(
+                                "Variable `{}` has a default that doesn't pass its validation regex",
+                                var.name
+                            ));
+                        }
+                    }
+                    Err(_) => {
+                        errs.push(format!(
+                            "Variable `{}` has an invalid validation regex: {}",
+                            var.name, pattern
+                        ));
+                    }
+                }
+            }
+        }
+
+        errs
+    }
+
+    /// Takes a path to a `template.toml` file and validates it
+    pub fn validate_file<T: AsRef<Path>>(path: T) -> Result<Vec<String>> {
+        let definition: TemplateDefinition = toml::from_str(&read_file(path.as_ref())?)
+            .map_err(|err| new_error(ErrorKind::Toml { err }))?;
+
+        Ok(definition.validate())
+    }
+
+    /// Returns the default values for all the variables that have one while following conditions
+    /// TODO: probably remove that fn? see how to test things
+    pub fn default_values(&self) -> Result<HashMap<String, Value>> {
+        let mut vals = HashMap::new();
         for var in &self.variables {
             // Skip the question if the value is different from the condition
             if let Some(ref cond) = var.only_if {
@@ -98,51 +230,20 @@ impl TemplateDefinition {
                 }
             }
 
-            if let Some(ref choices) = var.choices {
-                let res = if no_input {
-                    var.default.clone()
-                } else {
-                    ask_choices(&var.prompt, &var.default, choices)?
-                };
-                vals.insert(var.name.clone(), res);
-                continue;
-            }
-
             match &var.default {
                 Value::Boolean(b) => {
-                    let res = if no_input { *b } else { ask_bool(&var.prompt, *b)? };
-                    vals.insert(var.name.clone(), Value::Boolean(res));
-                    continue;
+                    vals.insert(var.name.clone(), Value::Boolean(*b));
                 }
                 Value::String(s) => {
-                    let default_value = if s.contains("{{") && s.contains("}}") {
-                        let mut context = Context::new();
-                        for (key, val) in &vals {
-                            context.insert(key, val);
-                        }
-
-                        let rendered_default = render_one_off_template(s, &context, None);
-                        match rendered_default {
-                            Err(e) => return Err(e),
-                            Ok(v) => v,
-                        }
-                    } else {
-                        s.clone()
-                    };
-
-                    let res = if no_input {
-                        default_value
-                    } else {
-                        ask_string(&var.prompt, &default_value, &var.validation)?
-                    };
-
-                    vals.insert(var.name.clone(), Value::String(res));
-                    continue;
+                    let mut context = Context::new();
+                    for (key, val) in &vals {
+                        context.insert(key, val);
+                    }
+                    let rendered_default = render_one_off_template(s, &context, None)?;
+                    vals.insert(var.name.clone(), Value::String(rendered_default));
                 }
                 Value::Integer(i) => {
-                    let res = if no_input { *i } else { ask_integer(&var.prompt, *i)? };
-                    vals.insert(var.name.clone(), Value::Integer(res));
-                    continue;
+                    vals.insert(var.name.clone(), Value::Integer(*i));
                 }
                 _ => return Err(new_error(ErrorKind::InvalidTemplate)),
             }
@@ -157,6 +258,14 @@ mod tests {
     use toml;
 
     use super::*;
+
+    #[test]
+    fn can_validate_definition() {
+        insta::glob!("snapshots/validation/*.toml", |path| {
+            let errs = TemplateDefinition::validate_file(&path).unwrap();
+            insta::assert_debug_snapshot!(&errs);
+        });
+    }
 
     #[test]
     fn can_load_template_and_work_with_no_input() {
@@ -189,7 +298,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
     }
 
@@ -208,7 +317,7 @@ mod tests {
 
             [[variables]]
             name = "database"
-            default = "postgres"
+            default = "mysql"
             prompt = "Which database to use?"
             choices = ["postgres", "mysql"]
 
@@ -217,14 +326,14 @@ mod tests {
             prompt = "Which version of Postgres?"
             default = "10.4"
             choices = ["10.4", "9.3"]
-            only_if = { name = "database", value = "mysql" }
+            only_if = { name = "database", value = "postgres" }
 
         "#,
         )
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
@@ -266,7 +375,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 4);
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(!res.contains_key("pg_version"));
@@ -301,7 +410,7 @@ mod tests {
 
         assert_eq!(tpl.variables.len(), 3);
 
-        let res = tpl.ask_questions(true);
+        let res = tpl.default_values();
 
         assert!(res.is_ok());
         let res = res.unwrap();
