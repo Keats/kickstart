@@ -7,7 +7,7 @@ pre_gen_hooks = [
 ]
 
 post_gen_hooks = [
-    { name = "greeting", path = "greet.sh" },
+    { name = "greeting", path = "greet.py" },
 ]
 
 [[variables]]
