@@ -14,5 +14,5 @@ pub mod prompt;
 pub mod terminal;
 pub mod utils;
 
-pub use definition::TemplateDefinition;
+pub use definition::{Cleanup, Condition, Hook, TemplateDefinition, Variable};
 pub use generation::{HookFile, Template};

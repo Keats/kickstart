@@ -82,8 +82,7 @@ pub struct TemplateDefinition {
     /// Conditionally delete some files/dirs based on generator values
     #[serde(default)]
     pub cleanup: Vec<Cleanup>,
-    /// Do not pass those files through Tera
-    /// http://cookiecutter.readthedocs.io/en/latest/advanced/copy_without_render.html
+    /// Do not pass those files through Tera. Those can be globs
     #[serde(default)]
     pub copy_without_render: Vec<String>,
     /// Hooks that should be ran after collecting all variables but before generating the template
@@ -105,7 +104,7 @@ impl TemplateDefinition {
             .collect()
     }
 
-    /// Go through the template.toml and finds all errors such as invalid globs/regex,
+    /// Go through the struct and finds all errors such as invalid globs/regex,
     /// missing/invalid default variable, bad conditions.
     /// If this returns an empty vec, this means the file is valid.
     pub fn validate(&self) -> Vec<String> {
@@ -205,7 +204,8 @@ impl TemplateDefinition {
         errs
     }
 
-    /// Takes a path to a `template.toml` file and validates it
+    /// Takes a path to a `template.toml` file and validates it.
+    /// An Error is only returned if we couldn't load the file or the TOML wasn't valid.
     pub fn validate_file<T: AsRef<Path>>(path: T) -> Result<Vec<String>> {
         let definition: TemplateDefinition = toml::from_str(&read_file(path.as_ref())?)
             .map_err(|err| new_error(ErrorKind::Toml { err }))?;
