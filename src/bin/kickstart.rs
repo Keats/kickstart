@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::process::Command as StdCommand;
 
@@ -149,8 +148,6 @@ macro_rules! bail_if_err {
 }
 
 fn execute_hook(hook: &HookFile) -> Result<()> {
-    println!("{:?}  = {:?} -> {:?}", hook.name(), hook.original_path(), hook.path());
-    println!("{:?}", read_to_string(hook.path()));
     terminal::bold(&format!("  - {}\n", hook.name()));
     StdCommand::new(hook.path()).status().expect("sh command failed to start");
     Ok(())

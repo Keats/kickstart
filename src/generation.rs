@@ -9,7 +9,7 @@ use std::process::Command;
 use std::str;
 
 use glob::Pattern;
-use tempfile::NamedTempFile;
+use tempfile::{TempDir, tempdir};
 use tera::Context;
 use toml::Value;
 use walkdir::WalkDir;
@@ -25,7 +25,8 @@ use crate::utils::{
 #[derive(Debug)]
 pub struct HookFile {
     hook: Hook,
-    file: NamedTempFile,
+    /// Canonical path to the hook file after templating
+    path: PathBuf,
 }
 
 impl HookFile {
@@ -38,14 +39,13 @@ impl HookFile {
     }
 
     /// The rendered hook canonicalized file path, this is what you want to execute.
-    pub fn path(&self) -> PathBuf {
-        // We _just_ created this file so it should exist and be fine
-        self.file.path().canonicalize().expect("should be able to canonicalize")
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 }
 
 /// The current template being generated
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Template {
     /// The parsed template definition
     pub definition: TemplateDefinition,
@@ -53,6 +53,8 @@ pub struct Template {
     variables: HashMap<String, Value>,
     /// Local path to the template folder
     path: PathBuf,
+    /// Temp dir created to store the hooks after templating
+    tmp_dir: TempDir,
 }
 
 impl Template {
@@ -99,7 +101,7 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
-        Ok(Template { path: buf, definition, variables: HashMap::new() })
+        Ok(Template { path: buf, definition, variables: HashMap::new(), tmp_dir: tempdir()? })
     }
 
     /// Overwrites the variables for the template
@@ -133,15 +135,16 @@ impl Template {
             let rendered = render_one_off_template(&content, &context, Some(hook.path.clone()))?;
 
             // Then we save it in a temporary file
-            let mut file = NamedTempFile::new()?;
+            let out_hook_path = self.tmp_dir.path().join(hook.path.file_name().expect("to have a filename"));
+            let mut file = File::create(&out_hook_path)?;
             write!(file, "{}", rendered)?;
             // TODO: how to make it work for windows
             #[cfg(unix)]
             {
-                fs::set_permissions(file.path(), fs::Permissions::from_mode(0o755))?;
+                fs::set_permissions(&out_hook_path, fs::Permissions::from_mode(0o755))?;
 
             }
-            hooks_files.push(HookFile { file, hook: hook.clone() });
+            hooks_files.push(HookFile { path: out_hook_path, hook: hook.clone() });
         }
 
         Ok(hooks_files)
