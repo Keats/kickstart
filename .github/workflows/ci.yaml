@@ -38,3 +38,8 @@ jobs:
       - name: run all examples
         run: |
           cargo run -- examples/hooks/ --no-input
+          cargo run -- examples/complex/ --no-input
+          cargo run -- examples/default-from-variable/ --no-input
+          cargo run -- examples/slugify/ --no-input
+          cargo run -- examples/super-basic/ --no-input
+          cargo run -- examples/with-directory/ --no-input
