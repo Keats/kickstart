@@ -116,6 +116,7 @@ cleanup = [
 # Hooks can also be run conditionally depending on a variable value.
 # If a hook is meant to fail, make sure to exit with a non 0 error code.
 # The files need to be executable, no restrictions otherwise. It can be python, bash, bat etc.
+# Hooks are automatically ignored, no need to add them to the ignore array
 
 # pre-gen hooks are run after all the questions have been answered. This can be used for example to do more complex
 # validations
@@ -232,6 +233,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 - Templates with a `directory` field will now no longer include that directory name in the output
 - `copy_without_render` elements are now templated and refer to the template relative path if specified
 - Avoid path traversals in cleanup
+- Add pre-gen and post-gen hooks
 
 ### 0.4.0 (2023-08-02)
 

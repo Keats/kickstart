@@ -95,6 +95,14 @@ pub struct TemplateDefinition {
 }
 
 impl TemplateDefinition {
+    pub(crate) fn all_hooks_paths(&self) -> Vec<String> {
+        self.pre_gen_hooks
+            .iter()
+            .chain(self.post_gen_hooks.iter())
+            .map(|h| format!("{}", h.path.display()))
+            .collect()
+    }
+
     /// Returns the default values for all the variables that have one while following conditions
     /// TODO: probably remove that fn? see how to test things
     pub fn default_values(&self) -> Result<HashMap<String, Value>> {
