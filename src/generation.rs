@@ -9,7 +9,7 @@ use std::process::Command;
 use std::str;
 
 use glob::Pattern;
-use tempfile::{TempDir, tempdir};
+use tempfile::{tempdir, TempDir};
 use tera::Context;
 use toml::Value;
 use walkdir::WalkDir;
@@ -135,14 +135,14 @@ impl Template {
             let rendered = render_one_off_template(&content, &context, Some(hook.path.clone()))?;
 
             // Then we save it in a temporary file
-            let out_hook_path = self.tmp_dir.path().join(hook.path.file_name().expect("to have a filename"));
+            let out_hook_path =
+                self.tmp_dir.path().join(hook.path.file_name().expect("to have a filename"));
             let mut file = File::create(&out_hook_path)?;
             write!(file, "{}", rendered)?;
             // TODO: how to make it work for windows
             #[cfg(unix)]
             {
                 fs::set_permissions(&out_hook_path, fs::Permissions::from_mode(0o755))?;
-
             }
             hooks_files.push(HookFile { path: out_hook_path, hook: hook.clone() });
         }

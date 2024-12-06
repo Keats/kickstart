@@ -149,8 +149,17 @@ macro_rules! bail_if_err {
 
 fn execute_hook(hook: &HookFile) -> Result<()> {
     terminal::bold(&format!("  - {}\n", hook.name()));
-    StdCommand::new(hook.path()).status().expect("sh command failed to start");
-    Ok(())
+    match StdCommand::new(hook.path()).status() {
+        Ok(code) => {
+            if code.success() {
+                Ok(())
+            } else {
+                let err: Box<dyn Error> = format!("Hook `{}` exited with a non 0 code\n", hook.name()).into();
+                bail(&*err)
+            }
+        }
+        Err(e) => bail(&e),
+    }
 }
 
 fn main() {
@@ -185,7 +194,7 @@ fn main() {
             if cli.run_hooks && !pre_gen_hooks.is_empty() {
                 terminal::bold("Running pre-gen hooks...\n");
                 for hook in &pre_gen_hooks {
-                    execute_hook(hook).expect("todo handle error")
+                    bail_if_err!(execute_hook(hook));
                 }
                 println!();
             }
@@ -198,7 +207,7 @@ fn main() {
             if cli.run_hooks && !post_gen_hooks.is_empty() {
                 terminal::bold("Running post-gen hooks...\n");
                 for hook in &post_gen_hooks {
-                    execute_hook(hook).expect("todo handle error")
+                    bail_if_err!(execute_hook(hook));
                 }
                 println!();
             }
