@@ -8,6 +8,8 @@ use toml::Value;
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::render_one_off_template;
 
+pub(crate) const CURRENT_VERSION: u8 = 2;
+
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Condition {
@@ -62,7 +64,7 @@ pub struct TemplateDefinition {
     /// Template version
     pub version: Option<String>,
     /// Version of the kickstart template spec
-    pub kickstart_version: usize,
+    pub kickstart_version: u8,
     /// Url of the template
     pub url: Option<String>,
     /// A list of the authors

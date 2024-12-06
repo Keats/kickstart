@@ -235,6 +235,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 - `copy_without_render` elements are now templated and refer to the template relative path if specified
 - Avoid path traversals in cleanup
 - Add pre-gen and post-gen hooks
+- Force `output-dir` to be selected in the CLI to avoid surprises
 
 ### 0.4.0 (2023-08-02)
 

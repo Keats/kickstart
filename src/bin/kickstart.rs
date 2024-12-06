@@ -23,7 +23,7 @@ pub struct Cli {
     pub template: Option<String>,
 
     /// Where to output the project: defaults to the current directory
-    #[clap(short = 'o', long, default_value = ".")]
+    #[clap(short = 'o', long)]
     pub output_dir: PathBuf,
 
     /// The directory of the given folder/repository to use, which needs to be a template.
@@ -36,7 +36,7 @@ pub struct Cli {
     #[clap(long, default_value_t = false)]
     pub no_input: bool,
 
-    /// Whether to run the hooks
+    /// Whether to run all the hooks
     #[clap(long, default_value_t = true)]
     pub run_hooks: bool,
 
