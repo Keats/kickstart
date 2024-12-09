@@ -8,20 +8,26 @@ name = "kickstart"
 version = "0.5.0"
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
 glob = "0.3"
 memchr = "2"
 regex = "1"
 serde = {version = "1", features = ["derive"]}
 tera = "1"
 heck = "0.5"
-term = "1"
 toml = "0.8"
 walkdir = "2"
 tempfile = "3"
 
+clap = { version = "4", features = ["derive"], optional = true }
+term = {version = "1", optional = true }
+
 [dev-dependencies]
 insta = { version = "1.38.0", features = ["glob"] }
+
+[features]
+cli = ["dep:clap", "dep:term"]
+required-features = ["cli"]
+
 
 [profile.dev.package]
 insta.opt-level = 3
@@ -29,3 +35,7 @@ similar.opt-level = 3
 
 [badges]
 maintenance = {status = "actively-developed"}
+
+[[bin]]
+name = "kickstart"
+required-features = ["cli"]

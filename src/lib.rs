@@ -10,10 +10,11 @@ mod definition;
 pub mod errors;
 mod filters;
 mod generation;
-pub mod prompt;
-pub mod terminal;
 mod utils;
 mod value;
+#[cfg(feature = "cli")]
+pub mod cli;
+
 
 pub use definition::{Cleanup, Condition, Hook, TemplateDefinition, Variable};
 pub use generation::{HookFile, Template};
