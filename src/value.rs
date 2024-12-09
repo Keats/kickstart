@@ -4,6 +4,7 @@ use toml::Value as TomlValue;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(untagged)]
+/// The possible values we can get from the default or from a user
 pub enum Value {
     String(String),
     Integer(i64),
@@ -29,11 +30,11 @@ impl Value {
         }
     }
 
-    pub fn is_str(&self) -> bool {
+    pub(crate) fn is_str(&self) -> bool {
         matches!(self, Value::String(..))
     }
 
-    pub fn as_str(&self) -> Option<&str> {
+    pub(crate) fn as_str(&self) -> Option<&str> {
         match *self {
             Value::String(ref s) => Some(&**s),
             _ => None,

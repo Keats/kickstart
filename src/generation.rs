@@ -18,7 +18,7 @@ use crate::errors::{map_io_err, new_error, ErrorKind, Result};
 use crate::utils::{
     create_directory, get_source, is_binary, read_file, render_one_off_template, write_file, Source,
 };
-use crate::Value;
+use crate::{Value, Variable};
 
 /// Contains information about a given hook: what's the original path and what's the path
 /// to the templated version
@@ -104,9 +104,45 @@ impl Template {
         Ok(Template { path: buf, definition, variables: HashMap::new(), tmp_dir: tempdir()? })
     }
 
+    fn get_variable_by_name(&self, name: &str) -> Result<&Variable> {
+        if let Some(var) = self.definition.variables.iter().find(|v| v.name == name) {
+            Ok(var)
+        } else {
+            Err(new_error(ErrorKind::InvalidVariableName(name.to_string())))
+        }
+    }
+
+    pub fn get_default_for(&self, name: &str, vals: &HashMap<String, Value>) -> Result<Value> {
+        let var = self.get_variable_by_name(name)?;
+        match &var.default {
+            Value::Integer(i) => Ok(Value::Integer(*i)),
+            Value::Boolean(i) => Ok(Value::Boolean(*i)),
+            Value::String(i) => {
+                // TODO: Very inefficient but might be ok?
+                let mut context = Context::new();
+                for (key, val) in vals {
+                    context.insert(key, val);
+                }
+                let rendered_default = render_one_off_template(i, &context, None)?;
+                Ok(Value::String(rendered_default))
+            }
+        }
+    }
+
+    pub fn insert_variable(&mut self, name: &str, value: Value) -> Result<()> {
+        self.get_variable_by_name(name)?;
+        self.variables.insert(name.to_string(), value);
+
+        Ok(())
+    }
+
     /// Overwrites the variables for the template
-    pub fn set_variables(&mut self, variables: HashMap<String, Value>) {
-        self.variables = variables;
+    pub fn set_variables(&mut self, variables: HashMap<String, Value>) -> Result<()> {
+        self.variables.clear();
+        for (name, val) in variables {
+            self.insert_variable(&name, val)?;
+        }
+        Ok(())
     }
 
     fn get_hooks(&self, hooks: &[Hook]) -> Result<Vec<HookFile>> {
@@ -162,6 +198,20 @@ impl Template {
     /// be templated.
     pub fn get_post_gen_hooks(&self) -> Result<Vec<HookFile>> {
         self.get_hooks(&self.definition.post_gen_hooks)
+    }
+
+    pub fn should_ask_variable(&self, name: &str) -> Result<bool> {
+        let var = self.get_variable_by_name(name)?;
+        if let Some(ref cond) = var.only_if {
+            if let Some(val) = self.variables.get(&cond.name) {
+                Ok(val == &cond.value)
+            } else {
+                // This means we never even asked the question
+                Ok(false)
+            }
+        } else {
+            Ok(true)
+        }
     }
 
     /// Generate the template at the given output directory

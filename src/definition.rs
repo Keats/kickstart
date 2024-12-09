@@ -31,7 +31,7 @@ pub struct Variable {
     /// The variable name in the final context
     pub name: String,
     /// A default value is required
-    pub default: Value,
+    pub(crate) default: Value,
     /// The text asked to the user
     pub prompt: String,
     /// Only for questions with choices
