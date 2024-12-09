@@ -2,6 +2,7 @@ use std::io::{self, BufRead, Write};
 
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::terminal;
+use crate::Value;
 use regex::Regex;
 
 /// Wait for user input and return what they typed
@@ -78,11 +79,7 @@ pub fn ask_integer(prompt: &str, default: i64) -> Result<i64> {
 }
 
 /// Ask users to make a choice between various options
-pub fn ask_choices(
-    prompt: &str,
-    default: &toml::Value,
-    choices: &[toml::Value],
-) -> Result<toml::Value> {
+pub fn ask_choices(prompt: &str, default: &Value, choices: &[Value]) -> Result<Value> {
     terminal::bold(&format!("{}: \n", prompt));
     let mut lines = vec![];
     let mut default_index = 1;

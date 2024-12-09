@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use tera::Context;
-use toml::Value;
 
 use crate::errors::{new_error, ErrorKind, Result};
 use crate::utils::{read_file, render_one_off_template};
+use crate::Value;
 
 /// A condition for a question to be asked
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -130,16 +130,6 @@ impl TemplateDefinition {
             let type_str = var.default.type_str();
             types.insert(var.name.to_string(), type_str);
 
-            match var.default {
-                Value::String(_) | Value::Integer(_) | Value::Boolean(_) => (),
-                _ => {
-                    errs.push(format!(
-                        "Variable `{}` has a default of type {}, which isn't allowed",
-                        var.name, type_str
-                    ));
-                }
-            }
-
             if let Some(ref choices) = var.choices {
                 let mut choice_found = false;
                 for c in choices {
@@ -245,7 +235,6 @@ impl TemplateDefinition {
                 Value::Integer(i) => {
                     vals.insert(var.name.clone(), Value::Integer(*i));
                 }
-                _ => return Err(new_error(ErrorKind::InvalidTemplate)),
             }
         }
 
