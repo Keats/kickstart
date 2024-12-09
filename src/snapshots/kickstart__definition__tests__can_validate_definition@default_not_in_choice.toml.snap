@@ -1,0 +1,8 @@
+---
+source: src/definition.rs
+expression: "&errs"
+input_file: src/snapshots/validation/default_not_in_choice.toml
+---
+[
+    "Variable `pg_version` has `\"10.5\"` as default, which isn't in the choices",
+]

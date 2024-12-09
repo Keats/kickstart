@@ -1,0 +1,9 @@
+name = "Test template"
+description = "A description"
+kickstart_version = 1
+
+[[variables]]
+name = "project_name"
+default = "123"
+prompt = "What's the name of your project?"
+validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"

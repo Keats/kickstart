@@ -8,6 +8,7 @@ pub fn error(message: &str) {
             Ok(_) => {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
+                t.flush().unwrap();
             }
             Err(_) => writeln!(t, "{}", message).unwrap(),
         };
@@ -23,6 +24,7 @@ pub fn success(message: &str) {
             Ok(_) => {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
+                t.flush().unwrap();
             }
             Err(_) => writeln!(t, "{}", message).unwrap(),
         };
@@ -38,6 +40,7 @@ pub fn bold(message: &str) {
             Ok(_) => {
                 write!(t, "{}", message).unwrap();
                 t.reset().unwrap();
+                t.flush().unwrap();
             }
             Err(_) => write!(t, "{}", message).unwrap(),
         };
@@ -69,6 +72,7 @@ pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &O
             write!(t, "[default: {}]: ", default).unwrap();
         }
         t.reset().unwrap();
+        t.flush().unwrap();
     } else {
         eprint!("{} [default: {}]: ", prompt, default);
     }
@@ -94,6 +98,7 @@ pub fn bool_question(prompt: &str, default: bool) {
             write!(t, "[y/N]: ").unwrap()
         }
         t.reset().unwrap();
+        t.flush().unwrap();
     } else {
         eprint!("{} {}: ", prompt, default_str);
     }
