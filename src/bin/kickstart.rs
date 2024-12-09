@@ -4,11 +4,9 @@ use std::path::PathBuf;
 use std::process::Command as StdCommand;
 
 use clap::{Parser, Subcommand};
-use tera::Context;
 
 use kickstart::errors::Result;
 use kickstart::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
-use kickstart::utils::render_one_off_template;
 use kickstart::Template;
 use kickstart::TemplateDefinition;
 use kickstart::Value;
@@ -55,68 +53,34 @@ pub enum Command {
 /// Ask all the questions of that template and return the answers.
 /// If `no_input` is `true`, it will automatically pick the defaults without
 /// prompting the user
-fn ask_questions(
-    definition: &TemplateDefinition,
-    no_input: bool,
-) -> Result<HashMap<String, Value>> {
+fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, Value>> {
     let mut vals = HashMap::new();
 
-    for var in &definition.variables {
-        // Skip the question if the value is different from the condition
-        if let Some(ref cond) = var.only_if {
-            if let Some(val) = vals.get(&cond.name) {
-                if *val != cond.value {
-                    continue;
-                }
-            } else {
-                // Not having it means we didn't even ask the question
-                continue;
-            }
+    for var in &template.definition.variables {
+        if !template.should_ask_variable(&var.name)? {
+            continue;
         }
+        let default = template.get_default_for(&var.name, &vals)?;
 
         if let Some(ref choices) = var.choices {
-            let res = if no_input {
-                var.default.clone()
-            } else {
-                ask_choices(&var.prompt, &var.default, choices)?
-            };
+            let res = if no_input { default } else { ask_choices(&var.prompt, &default, choices)? };
             vals.insert(var.name.clone(), res);
             continue;
         }
 
-        match &var.default {
+        match default {
             Value::Boolean(b) => {
-                let res = if no_input { *b } else { ask_bool(&var.prompt, *b)? };
+                let res = if no_input { b } else { ask_bool(&var.prompt, b)? };
                 vals.insert(var.name.clone(), Value::Boolean(res));
                 continue;
             }
             Value::String(s) => {
-                let default_value = if s.contains("{{") && s.contains("}}") {
-                    let mut context = Context::new();
-                    for (key, val) in &vals {
-                        context.insert(key, val);
-                    }
-
-                    let rendered_default = render_one_off_template(s, &context, None);
-                    match rendered_default {
-                        Err(e) => return Err(e),
-                        Ok(v) => v,
-                    }
-                } else {
-                    s.clone()
-                };
-
-                let res = if no_input {
-                    default_value
-                } else {
-                    ask_string(&var.prompt, &default_value, &var.validation)?
-                };
-
+                let res = if no_input { s } else { ask_string(&var.prompt, &s, &var.validation)? };
                 vals.insert(var.name.clone(), Value::String(res));
                 continue;
             }
             Value::Integer(i) => {
-                let res = if no_input { *i } else { ask_integer(&var.prompt, *i)? };
+                let res = if no_input { i } else { ask_integer(&var.prompt, i)? };
                 vals.insert(var.name.clone(), Value::Integer(res));
                 continue;
             }
@@ -185,8 +149,8 @@ fn main() {
             ));
 
             // 1. ask questions
-            let variables = bail_if_err!(ask_questions(&template.definition, cli.no_input));
-            template.set_variables(variables);
+            let vals = bail_if_err!(ask_questions(&template, cli.no_input));
+            bail_if_err!(template.set_variables(vals));
 
             // 2. run pre-gen hooks
             let pre_gen_hooks = bail_if_err!(template.get_pre_gen_hooks());

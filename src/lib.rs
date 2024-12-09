@@ -12,7 +12,7 @@ mod filters;
 mod generation;
 pub mod prompt;
 pub mod terminal;
-pub mod utils;
+mod utils;
 mod value;
 
 pub use definition::{Cleanup, Condition, Hook, TemplateDefinition, Variable};

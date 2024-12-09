@@ -32,6 +32,7 @@ pub enum ErrorKind {
     MissingTemplateDefinition,
     InvalidTemplate,
     UnreadableStdin,
+    InvalidVariableName(String),
     /// An error while cloning a repository
     Git {
         err: io::Error,
@@ -76,6 +77,7 @@ impl StdError for Error {
             ErrorKind::InvalidTemplate => None,
             ErrorKind::MissingTemplateDefinition => None,
             ErrorKind::UnreadableStdin => None,
+            ErrorKind::InvalidVariableName(_) => None,
         }
     }
 
@@ -118,6 +120,9 @@ impl fmt::Display for Error {
                 } else {
                     write!(f, "Invalid glob pattern `{}`: {}", pattern_before_rendering, err)
                 }
+            }
+            ErrorKind::InvalidVariableName(ref name) => {
+                write!(f, "Variable {name} not found in the template definition")
             }
             ErrorKind::MissingTemplateDefinition => write!(f, "The template.toml is missing"),
             ErrorKind::UnreadableStdin => write!(f, "Unable to read from stdin"),
