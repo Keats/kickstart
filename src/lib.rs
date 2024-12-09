@@ -13,6 +13,8 @@ mod generation;
 pub mod prompt;
 pub mod terminal;
 pub mod utils;
+mod value;
 
 pub use definition::{Cleanup, Condition, Hook, TemplateDefinition, Variable};
 pub use generation::{HookFile, Template};
+pub use value::Value;

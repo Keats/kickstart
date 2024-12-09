@@ -11,7 +11,6 @@ use std::str;
 use glob::Pattern;
 use tempfile::{tempdir, TempDir};
 use tera::Context;
-use toml::Value;
 use walkdir::WalkDir;
 
 use crate::definition::{Hook, TemplateDefinition};
@@ -19,6 +18,7 @@ use crate::errors::{map_io_err, new_error, ErrorKind, Result};
 use crate::utils::{
     create_directory, get_source, is_binary, read_file, render_one_off_template, write_file, Source,
 };
+use crate::Value;
 
 /// Contains information about a given hook: what's the original path and what's the path
 /// to the templated version

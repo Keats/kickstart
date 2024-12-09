@@ -5,13 +5,13 @@ use std::process::Command as StdCommand;
 
 use clap::{Parser, Subcommand};
 use tera::Context;
-use toml::Value;
 
-use kickstart::errors::{new_error, ErrorKind, Result};
+use kickstart::errors::Result;
 use kickstart::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 use kickstart::utils::render_one_off_template;
 use kickstart::Template;
 use kickstart::TemplateDefinition;
+use kickstart::Value;
 use kickstart::{terminal, HookFile};
 
 #[derive(Parser)]
@@ -120,7 +120,6 @@ fn ask_questions(
                 vals.insert(var.name.clone(), Value::Integer(res));
                 continue;
             }
-            _ => return Err(new_error(ErrorKind::InvalidTemplate)),
         }
     }
 
