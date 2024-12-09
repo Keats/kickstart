@@ -33,6 +33,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Build System Info
         run: rustc --version
+      - name: check with all features enabled
+        run: cargo check --all-features
       - name: run tests
         run: cargo test
       - name: run all examples

@@ -9,10 +9,10 @@ This is a slightly more powerful version of an equivalent tool in Python, [cooki
 
 ## Installation
 
-`kickstart` is available only through crates.io:
+`kickstart` is available through crates.io:
 
 ```bash
-$ cargo install kickstart
+$ cargo install kickstart --features=cli
 ```
 
 Or as a pre-built binary [on the Releases page](https://github.com/Keats/kickstart/releases).
