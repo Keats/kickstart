@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Write};
 
-use crate::errors::{new_error, ErrorKind, Result};
 use crate::cli::terminal;
+use crate::errors::{new_error, ErrorKind, Result};
 use crate::Value;
 use regex::Regex;
 

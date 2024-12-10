@@ -5,14 +5,10 @@ use std::process::Command as StdCommand;
 
 use clap::{Parser, Subcommand};
 
-use kickstart::errors::Result;
 use kickstart::cli::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
-use kickstart::Template;
-use kickstart::TemplateDefinition;
-use kickstart::{Value, HookFile};
 use kickstart::cli::terminal;
-
-
+use kickstart::errors::Result;
+use kickstart::{HookFile, Template, TemplateDefinition, Value};
 
 #[derive(Parser)]
 #[clap(version, author, about, subcommand_negates_reqs = true)]
