@@ -11,13 +11,15 @@ use crate::utils::{read_file, render_one_off_template};
 use crate::Value;
 
 /// A condition for a question to be asked
+/// If the value is different or not found, the question should not be asked.
+/// Use [Template::should_ask_variable] rather than handling that yourself
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Condition {
     pub name: String,
     pub value: Value,
 }
 
-/// A list of items to be deleted when `name` has `value`
+/// A list of paths to be deleted when `name` has `value`
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Cleanup {
     pub name: String,
@@ -30,19 +32,19 @@ pub struct Cleanup {
 pub struct Variable {
     /// The variable name in the final context
     pub name: String,
-    /// A default value is required
+    /// A default value is required. It can be a Tera expression if it is a string.
     pub(crate) default: Value,
     /// The text asked to the user
     pub prompt: String,
     /// Only for questions with choices
     pub choices: Option<Vec<Value>>,
-    /// A regex pattern to validate the input
+    /// A regex pattern to validate the input. Only used where the value is meant to be a string.
     pub validation: Option<String>,
     /// Only ask this variable if that condition is true
     pub only_if: Option<Condition>,
 }
 
-/// A hook that should be ran
+/// A hook is a file that will get executed
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Hook {
     /// The display name for that hook
@@ -251,7 +253,7 @@ mod tests {
     #[test]
     fn can_validate_definition() {
         insta::glob!("snapshots/validation/*.toml", |path| {
-            let errs = TemplateDefinition::validate_file(&path).unwrap();
+            let errs = TemplateDefinition::validate_file(&path);
             insta::assert_debug_snapshot!(&errs);
         });
     }

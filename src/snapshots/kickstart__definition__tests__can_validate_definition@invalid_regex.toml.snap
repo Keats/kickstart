@@ -3,6 +3,8 @@ source: src/definition.rs
 expression: "&errs"
 input_file: src/snapshots/validation/invalid_regex.toml
 ---
-[
-    "Variable `project_name` has an invalid validation regex: **[0-9]++",
-]
+Ok(
+    [
+        "Variable `project_name` has an invalid validation regex: **[0-9]++",
+    ],
+)

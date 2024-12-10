@@ -3,6 +3,8 @@ source: src/definition.rs
 expression: "&errs"
 input_file: src/snapshots/validation/regex_on_wrong_type.toml
 ---
-[
-    "Variable `project` has a validation regex but is not a string",
-]
+Ok(
+    [
+        "Variable `project` has a validation regex but is not a string",
+    ],
+)

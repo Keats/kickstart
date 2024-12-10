@@ -3,6 +3,8 @@ source: src/definition.rs
 expression: "&errs"
 input_file: src/snapshots/validation/default_not_matching_regex.toml
 ---
-[
-    "Variable `project_name` has a default that doesn't pass its validation regex",
-]
+Ok(
+    [
+        "Variable `project_name` has a default that doesn't pass its validation regex",
+    ],
+)
