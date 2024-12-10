@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::result;
 
 /// A crate private constructor for `Error`.
-pub fn new_error(kind: ErrorKind) -> Error {
+pub(crate) fn new_error(kind: ErrorKind) -> Error {
     Error { kind, source: None }
 }
 

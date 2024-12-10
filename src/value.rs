@@ -52,7 +52,7 @@ impl<'de> Deserialize<'de> for Value {
             TomlValue::String(s) => Ok(Value::String(s)),
             TomlValue::Integer(i) => Ok(Value::Integer(i)),
             TomlValue::Boolean(b) => Ok(Value::Boolean(b)),
-            _ => Err(D::Error::custom(format!("Value {:?} (of type `{}`) is not allowed as a value: only strings, integers and boolean are.", v, v.type_str()))),
+            _ => Err(D::Error::custom(format!("Value {} (of type `{}`) is not allowed as a value: only strings, integers and boolean are.", v, v.type_str()))),
         }
     }
 }

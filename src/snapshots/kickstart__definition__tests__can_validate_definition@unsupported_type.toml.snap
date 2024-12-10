@@ -3,7 +3,27 @@ source: src/definition.rs
 expression: "&errs"
 input_file: src/snapshots/validation/unsupported_type.toml
 ---
-[
-    "Variable `project_name` has a default of type float, which isn't allowed",
-    "Variable `project_name` has a validation regex but is not a string",
-]
+Err(
+    Error {
+        kind: Toml {
+            err: Error {
+                inner: Error {
+                    inner: TomlError {
+                        message: "Value 1.2 (of type `float`) is not allowed as a value: only strings, integers and boolean are.",
+                        raw: Some(
+                            "name = \"Test template\"\ndescription = \"A description\"\nkickstart_version = 1\n\n[[variables]]\nname = \"project_name\"\ndefault = 1.2\nprompt = \"What's the name of your project?\"\nvalidation = \"^([a-zA-Z][a-zA-Z0-9_-]+)$\"",
+                        ),
+                        keys: [
+                            "variables",
+                            "default",
+                        ],
+                        span: Some(
+                            122..125,
+                        ),
+                    },
+                },
+            },
+        },
+        source: None,
+    },
+)

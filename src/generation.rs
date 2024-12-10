@@ -44,7 +44,8 @@ impl HookFile {
     }
 }
 
-/// The current template being generated
+/// The current template being generated.
+/// This is what you will end up interacting the most as a library.
 #[derive(Debug)]
 pub struct Template {
     /// The parsed template definition
@@ -88,6 +89,7 @@ impl Template {
         Template::from_local(&tmp, directory)
     }
 
+    /// Load a template from a local path
     pub fn from_local(path: &Path, directory: Option<&str>) -> Result<Template> {
         let mut buf = path.to_path_buf();
         if let Some(dir) = directory {
@@ -112,6 +114,10 @@ impl Template {
         }
     }
 
+    /// Use this to get the default of the given variable.
+    /// You have to pass a hashmap of previous values set because some default variables
+    /// can use previous variables.
+    /// Will error if the template doesn't know that variable name.
     pub fn get_default_for(&self, name: &str, vals: &HashMap<String, Value>) -> Result<Value> {
         let var = self.get_variable_by_name(name)?;
         match &var.default {
@@ -129,6 +135,8 @@ impl Template {
         }
     }
 
+    /// Insert a single variable.
+    /// Will error if the template doesn't know that variable name.
     pub fn insert_variable(&mut self, name: &str, value: Value) -> Result<()> {
         self.get_variable_by_name(name)?;
         self.variables.insert(name.to_string(), value);
@@ -137,6 +145,7 @@ impl Template {
     }
 
     /// Overwrites the variables for the template
+    /// Will error if the template doesn't know one of the variables name.
     pub fn set_variables(&mut self, variables: HashMap<String, Value>) -> Result<()> {
         self.variables.clear();
         for (name, val) in variables {
@@ -200,10 +209,14 @@ impl Template {
         self.get_hooks(&self.definition.post_gen_hooks)
     }
 
-    pub fn should_ask_variable(&self, name: &str) -> Result<bool> {
+    /// Checks whether the variable should be asked at all.
+    /// This will evaluate whatever condition if it has one.
+    /// Use that rather than accessing the variable.default as the value might be templated.
+    /// Will error if the template doesn't know that variable name.
+    pub fn should_ask_variable(&self, name: &str, vals: &HashMap<String, Value>) -> Result<bool> {
         let var = self.get_variable_by_name(name)?;
         if let Some(ref cond) = var.only_if {
-            if let Some(val) = self.variables.get(&cond.name) {
+            if let Some(val) = vals.get(&cond.name) {
                 Ok(val == &cond.value)
             } else {
                 // This means we never even asked the question
@@ -354,7 +367,7 @@ mod tests {
     fn can_generate_from_local_path() {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/complex", None).unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
 
         assert!(res.is_ok());
@@ -366,7 +379,7 @@ mod tests {
     fn can_generate_from_local_path_with_directory() {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/with-directory", None).unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
         assert!(res.is_ok());
         assert!(dir.path().join("template_root").join("Howdy.py").exists());
@@ -376,7 +389,7 @@ mod tests {
     fn can_generate_from_local_path_with_directory_param() {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("./", Some("examples/complex")).unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
@@ -388,7 +401,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl =
             Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
 
         assert!(res.is_ok());
@@ -402,7 +415,7 @@ mod tests {
         let mut tpl =
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
 
         assert!(res.is_ok());
@@ -414,7 +427,7 @@ mod tests {
     fn can_generate_handling_slugify() {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/slugify", None).unwrap();
-        tpl.set_variables(tpl.definition.default_values().unwrap());
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
         let res = tpl.generate(&dir.path().to_path_buf());
         assert!(res.is_ok());
         assert!(!dir.path().join("template.toml").exists());
