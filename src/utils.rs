@@ -61,7 +61,7 @@ pub fn render_one_off_template(
 }
 
 /// Is the buffer from a binary file?
-/// See https://twitter.com/20100Prouillet/status/1022973478096527360
+/// See <https://twitter.com/20100Prouillet/status/1022973478096527360>
 pub fn is_binary(buf: &[u8]) -> bool {
     memchr(b'\x00', buf).is_some()
 }

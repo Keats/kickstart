@@ -1,0 +1,10 @@
+---
+source: src/definition.rs
+expression: "&e"
+input_file: src/snapshots/validation/unsupported_type.toml
+---
+Invalid TOML: TOML parse error at line 7, column 11
+  |
+7 | default = 1.2
+  |           ^^^
+Value 1.2 (of type `float`) is not allowed as a value: only strings, integers and boolean are.
