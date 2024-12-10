@@ -6,15 +6,14 @@
 //! See the [kickstart binary](https://github.com/Keats/kickstart/blob/master/src/bin/kickstart.rs)
 //! for an example on how to use it.
 
+#[cfg(feature = "cli")]
+pub mod cli;
 mod definition;
 pub mod errors;
 mod filters;
 mod generation;
 mod utils;
 mod value;
-#[cfg(feature = "cli")]
-pub mod cli;
-
 
 pub use definition::{Cleanup, Condition, Hook, TemplateDefinition, Variable};
 pub use generation::{HookFile, Template};
