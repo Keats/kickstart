@@ -3,8 +3,6 @@ source: src/definition.rs
 expression: "&errs"
 input_file: src/snapshots/validation/only_if_not_filled_yet_var.toml
 ---
-Ok(
-    [
-        "Variable `pg_version` depends on `database`, which wasn't asked",
-    ],
-)
+[
+    "Variable `pg_version` depends on `database`, which wasn't asked",
+]

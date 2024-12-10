@@ -1,29 +1,10 @@
 ---
 source: src/definition.rs
-expression: "&errs"
+expression: "&e"
 input_file: src/snapshots/validation/unsupported_type.toml
 ---
-Err(
-    Error {
-        kind: Toml {
-            err: Error {
-                inner: Error {
-                    inner: TomlError {
-                        message: "Value 1.2 (of type `float`) is not allowed as a value: only strings, integers and boolean are.",
-                        raw: Some(
-                            "name = \"Test template\"\ndescription = \"A description\"\nkickstart_version = 1\n\n[[variables]]\nname = \"project_name\"\ndefault = 1.2\nprompt = \"What's the name of your project?\"\nvalidation = \"^([a-zA-Z][a-zA-Z0-9_-]+)$\"",
-                        ),
-                        keys: [
-                            "variables",
-                            "default",
-                        ],
-                        span: Some(
-                            122..125,
-                        ),
-                    },
-                },
-            },
-        },
-        source: None,
-    },
-)
+Invalid TOML: TOML parse error at line 7, column 11
+  |
+7 | default = 1.2
+  |           ^^^
+Value 1.2 (of type `float`) is not allowed as a value: only strings, integers and boolean are.

@@ -253,8 +253,10 @@ mod tests {
     #[test]
     fn can_validate_definition() {
         insta::glob!("snapshots/validation/*.toml", |path| {
-            let errs = TemplateDefinition::validate_file(&path);
-            insta::assert_debug_snapshot!(&errs);
+            match TemplateDefinition::validate_file(&path) {
+                Ok(errs) => insta::assert_debug_snapshot!(&errs),
+                Err(e) => insta::assert_snapshot!(&e)
+            }
         });
     }
 
