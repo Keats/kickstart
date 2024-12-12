@@ -93,7 +93,7 @@ fn execute_hook(hook: &HookFile, output_dir: &PathBuf) -> Result<()> {
     if output_dir.exists() {
         command.current_dir(output_dir);
     }
-    let code = StdCommand::new(hook.path()).status()?;
+    let code = command.status()?;
     if code.success() {
         Ok(())
     } else {
