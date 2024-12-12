@@ -255,7 +255,7 @@ mod tests {
         insta::glob!("snapshots/validation/*.toml", |path| {
             match TemplateDefinition::validate_file(&path) {
                 Ok(errs) => insta::assert_debug_snapshot!(&errs),
-                Err(e) => insta::assert_snapshot!(&e)
+                Err(e) => insta::assert_snapshot!(&e),
             }
         });
     }

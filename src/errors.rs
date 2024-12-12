@@ -1,4 +1,3 @@
-use std::error::Error as StdError;
 use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -22,7 +21,7 @@ pub type Result<T> = result::Result<T, Error>;
 pub struct Error {
     /// Kind of error
     pub kind: ErrorKind,
-    pub source: Option<Box<dyn StdError>>,
+    pub source: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 /// The specific type of an error.
@@ -66,30 +65,9 @@ impl From<io::Error> for Error {
     }
 }
 
-impl StdError for Error {
-    fn cause(&self) -> Option<&dyn StdError> {
-        match self.kind {
-            ErrorKind::Io { ref err, .. } => Some(err),
-            ErrorKind::Tera { ref err, .. } => Some(err),
-            ErrorKind::Toml { ref err } => Some(err),
-            ErrorKind::Git { ref err } => Some(err),
-            ErrorKind::InvalidGlobPattern { ref err, .. } => Some(err),
-            ErrorKind::InvalidTemplate => None,
-            ErrorKind::MissingTemplateDefinition => None,
-            ErrorKind::UnreadableStdin => None,
-            ErrorKind::InvalidVariableName(_) => None,
-        }
-    }
-
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        let mut source = self.source.as_deref();
-        if source.is_none() {
-            if let ErrorKind::Tera { ref err, .. } = self.kind {
-                source = err.source();
-            }
-        }
-
-        source
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.source.as_ref().map(|e| e.as_ref() as _)
     }
 }
 
