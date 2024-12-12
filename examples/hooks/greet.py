@@ -1,3 +1,4 @@
 #!/usr/bin/env python3
+import os
 
-print("Hello {{greeting_recipient}}!")
+print(f"Hello {{greeting_recipient}} from {os.getcwd()}!")
