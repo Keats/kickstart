@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::path::PathBuf;
 use std::process::Command as StdCommand;
 
+use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 
 use kickstart::cli::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 use kickstart::cli::terminal;
-use kickstart::errors::Result;
 use kickstart::{HookFile, Template, TemplateDefinition, Value};
 
 #[derive(Parser)]
@@ -88,96 +87,86 @@ fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, 
     Ok(vals)
 }
 
-fn bail(e: &dyn Error) -> ! {
-    terminal::error(&format!("Error: {}", e));
-    let mut cause = e.source();
-    while let Some(e) = cause {
-        terminal::error(&format!("\nReason: {}", e));
-        cause = e.source();
-    }
-    ::std::process::exit(1)
-}
-
-macro_rules! bail_if_err {
-    ($expr:expr) => {{
-        match $expr {
-            Ok(v) => v,
-            Err(e) => bail(&e),
-        }
-    }};
-}
-
 fn execute_hook(hook: &HookFile, output_dir: &PathBuf) -> Result<()> {
     terminal::bold(&format!("  - {}\n", hook.name()));
     let mut command = StdCommand::new(hook.path());
     if output_dir.exists() {
         command.current_dir(output_dir);
     }
-    match command.status() {
-        Ok(code) => {
-            if code.success() {
-                Ok(())
-            } else {
-                let err: Box<dyn Error> =
-                    format!("Hook `{}` exited with a non 0 code\n", hook.name()).into();
-                bail(&*err)
-            }
-        }
-        Err(e) => bail(&e),
+    let code = StdCommand::new(hook.path()).status()?;
+    if code.success() {
+        Ok(())
+    } else {
+        bail!("Hook `{}` exited with a non 0 code\n", hook.name())
     }
 }
 
-fn main() {
+fn try_main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Some(Command::Validate { path }) => {
-            let errs = bail_if_err!(TemplateDefinition::validate_file(path));
+            let errs = TemplateDefinition::validate_file(path)?;
 
             if !errs.is_empty() {
-                terminal::error("The template.toml is invalid:\n");
-                for err in errs {
-                    terminal::error(&format!("- {}\n", err));
-                }
-                ::std::process::exit(1);
+                // We let the caller do the error handling/display
+                let err = format!(
+                    "The template.toml is invalid:\n{}",
+                    errs.into_iter().map(|e| format!("- {}\n", e)).collect::<Vec<_>>().join("\n"),
+                );
+                bail!(err);
             } else {
                 terminal::success("The template.toml file is valid!\n");
             }
         }
         None => {
-            let mut template = bail_if_err!(Template::from_input(
-                &cli.template.unwrap(),
-                cli.directory.as_deref()
-            ));
+            let mut template =
+                Template::from_input(&cli.template.unwrap(), cli.directory.as_deref())?;
 
             // 1. ask questions
-            let vals = bail_if_err!(ask_questions(&template, cli.no_input));
-            bail_if_err!(template.set_variables(vals));
+            let vals = ask_questions(&template, cli.no_input)?;
+            template.set_variables(vals)?;
 
             // 2. run pre-gen hooks
-            let pre_gen_hooks = bail_if_err!(template.get_pre_gen_hooks());
+            let pre_gen_hooks = template.get_pre_gen_hooks()?;
             if cli.run_hooks && !pre_gen_hooks.is_empty() {
                 terminal::bold("Running pre-gen hooks...\n");
                 for hook in &pre_gen_hooks {
-                    bail_if_err!(execute_hook(hook, &cli.output_dir));
+                    execute_hook(hook, &cli.output_dir)?;
                 }
+                // For spacing
                 println!();
             }
 
             // 3. generate
-            bail_if_err!(template.generate(&cli.output_dir));
+            template.generate(&cli.output_dir)?;
 
             // 4. run post-gen hooks
-            let post_gen_hooks = bail_if_err!(template.get_post_gen_hooks());
+            let post_gen_hooks = template.get_post_gen_hooks()?;
             if cli.run_hooks && !post_gen_hooks.is_empty() {
                 terminal::bold("Running post-gen hooks...\n");
                 for hook in &post_gen_hooks {
-                    bail_if_err!(execute_hook(hook, &cli.output_dir));
+                    execute_hook(hook, &cli.output_dir)?;
                 }
+                // For spacing
                 println!();
             }
 
             terminal::success("\nEverything done, ready to go!\n");
         }
+    }
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = try_main() {
+        terminal::error(&format!("Error: {}", e));
+        let mut cause = e.source();
+        while let Some(e) = cause {
+            terminal::error(&format!("\nReason: {}", e));
+            cause = e.source();
+        }
+        ::std::process::exit(1)
     }
 }

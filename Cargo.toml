@@ -19,13 +19,14 @@ walkdir = "2"
 tempfile = "3"
 
 clap = { version = "4", features = ["derive"], optional = true }
-term = {version = "1", optional = true }
+term = { version = "1", optional = true }
+anyhow = { version = "1", optional = true }
 
 [dev-dependencies]
 insta = { version = "1.38.0", features = ["glob"] }
 
 [features]
-cli = ["dep:clap", "dep:term"]
+cli = ["dep:clap", "dep:term", "dep:anyhow"]
 required-features = ["cli"]
 
 
