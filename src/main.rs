@@ -107,9 +107,13 @@ macro_rules! bail_if_err {
     }};
 }
 
-fn execute_hook(hook: &HookFile) -> Result<()> {
+fn execute_hook(hook: &HookFile, output_dir: &PathBuf) -> Result<()> {
     terminal::bold(&format!("  - {}\n", hook.name()));
-    match StdCommand::new(hook.path()).status() {
+    let mut command = StdCommand::new(hook.path());
+    if output_dir.exists() {
+        command.current_dir(output_dir);
+    }
+    match command.status() {
         Ok(code) => {
             if code.success() {
                 Ok(())
@@ -155,7 +159,7 @@ fn main() {
             if cli.run_hooks && !pre_gen_hooks.is_empty() {
                 terminal::bold("Running pre-gen hooks...\n");
                 for hook in &pre_gen_hooks {
-                    bail_if_err!(execute_hook(hook));
+                    bail_if_err!(execute_hook(hook, &cli.output_dir));
                 }
                 println!();
             }
@@ -168,7 +172,7 @@ fn main() {
             if cli.run_hooks && !post_gen_hooks.is_empty() {
                 terminal::bold("Running post-gen hooks...\n");
                 for hook in &post_gen_hooks {
-                    bail_if_err!(execute_hook(hook));
+                    bail_if_err!(execute_hook(hook, &cli.output_dir));
                 }
                 println!();
             }
