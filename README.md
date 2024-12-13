@@ -31,10 +31,9 @@ Run `kickstart --help` for a full listing of the available commands and their fl
 - It has conditional cleanup to not let irrelevant files in the output directory after generation
 - Templates can be made for any kind of projects/languages
 - Case conversion filters, e.g. `camelCase` to `CamelCase`
+- Pre-gen and post-gen hooks that can execute templated scripts
 
-The main drawback compared to cookiecutter is the lack of hook scripts support, which can be mitigated a bit by the conditional cleanup.
-
-Lastly, since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
+Since Windows does not allow `|` in file paths, you may use a [tera built-in filter][builtin]
 by using the `$$` separator instead.
 
 Note that, in file templates, you should keep using `|` for filtering, as the `$$` syntax is only for files and directories. 
@@ -74,6 +73,9 @@ url = "https://google.com"
 authors = [
 
 ]
+
+# Whether to follow the symlinks when going through the files in the template
+follow_symlinks = false
 
 # Optional, a list of keywords for this template
 keywords = [
@@ -228,7 +230,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
 
-### 0.5.0 (unreleased)
+### 0.5.0 (2024-12-13)
 
 - The `sub-dir` parameter has been renamed to `directory` in the CLI
 - Templates with a `directory` field will now no longer include that directory name in the output
@@ -236,6 +238,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 - Avoid path traversals in cleanup
 - Add pre-gen and post-gen hooks
 - Force `output-dir` to be selected in the CLI to avoid surprises
+- Add support for following symlinks
 
 ### 0.4.0 (2023-08-02)
 
