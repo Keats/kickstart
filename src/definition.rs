@@ -78,9 +78,9 @@ pub struct TemplateDefinition {
     /// The directory in which the template files are.
     /// Useful if a template has its own docs, README, CI and various files
     pub directory: Option<String>,
-    /// Follow symlinks
+    /// Whether to follow symlinks
     #[serde(default)]
-    pub symlinks: bool,
+    pub follow_symlinks: bool,
     /// Do not copy those directories/files
     #[serde(default)]
     pub ignore: Vec<String>,
@@ -305,7 +305,7 @@ mod tests {
             name = "Test template"
             description = "A description"
             kickstart_version = 1
-            symlinks = false
+            follow_symlinks = false
 
             [[variables]]
             name = "project_name"
