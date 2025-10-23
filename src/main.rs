@@ -17,7 +17,7 @@ pub struct Cli {
     pub template: Option<String>,
 
     /// Where to output the project: defaults to the current directory
-    #[clap(short = 'o', long)]
+    #[clap(short = 'o', long, default_value_os_t = PathBuf::from("."))]
     pub output_dir: PathBuf,
 
     /// The directory of the given folder/repository to use, which needs to be a template.
