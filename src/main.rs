@@ -54,6 +54,12 @@ fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, 
     let mut vals = HashMap::new();
 
     for var in &template.definition.variables {
+        if var.derived.unwrap_or(false) {
+            let default = template.get_default_for(&var.name, &vals)?;
+            vals.insert(var.name.clone(), default);
+            continue;
+        }
+
         if !template.should_ask_variable(&var.name, &vals)? {
             continue;
         }

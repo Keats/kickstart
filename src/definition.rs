@@ -42,6 +42,8 @@ pub struct Variable {
     pub validation: Option<String>,
     /// Only ask this variable if that condition is true
     pub only_if: Option<Condition>,
+    /// Whether this variable is derived and should not be prompted
+    pub derived: Option<bool>,
 }
 
 /// A hook is a file that will get executed
@@ -420,5 +422,42 @@ mod tests {
         let expected_value: String = String::from("my_project-other_project-manifest.md");
 
         assert_eq!(got_value, &Value::String(expected_value))
+    }
+
+    #[test]
+    fn can_handle_derived_variable_with_no_input() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+        name = "Test template"
+        description = "Testing derived variable behavior"
+        kickstart_version = 1
+
+        [[variables]]
+        name = "project_name"
+        default = "My project"
+        prompt = "What's the name of your project?"
+
+        [[variables]]
+        name = "slug"
+        default = "{{project_name | slugify}}"
+        prompt = "Slug for the project"
+        derived = true
+        "#,
+        )
+        .unwrap();
+
+        assert_eq!(tpl.variables.len(), 2);
+
+        let res = tpl.default_values();
+        assert!(res.is_ok());
+        let res = res.unwrap();
+
+        // Check that both variables exist
+        assert!(res.contains_key("project_name"));
+        assert!(res.contains_key("slug"));
+
+        // Check that slug was rendered from project_name
+        let expected_slug = Value::String("my-project".to_string());
+        assert_eq!(res.get("slug"), Some(&expected_slug));
     }
 }
