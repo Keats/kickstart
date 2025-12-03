@@ -64,26 +64,27 @@ fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, 
             continue;
         }
         let default = template.get_default_for(&var.name, &vals)?;
+        let prompt_text = var.prompt.as_deref().unwrap_or("");
 
         if let Some(ref choices) = var.choices {
-            let res = if no_input { default } else { ask_choices(&var.prompt, &default, choices)? };
+            let res = if no_input { default } else { ask_choices(prompt_text, &default, choices)? };
             vals.insert(var.name.clone(), res);
             continue;
         }
 
         match default {
             Value::Boolean(b) => {
-                let res = if no_input { b } else { ask_bool(&var.prompt, b)? };
+                let res = if no_input { b } else { ask_bool(prompt_text, b)? };
                 vals.insert(var.name.clone(), Value::Boolean(res));
                 continue;
             }
             Value::String(s) => {
-                let res = if no_input { s } else { ask_string(&var.prompt, &s, &var.validation)? };
+                let res = if no_input { s } else { ask_string(prompt_text, &s, &var.validation)? };
                 vals.insert(var.name.clone(), Value::String(res));
                 continue;
             }
             Value::Integer(i) => {
-                let res = if no_input { i } else { ask_integer(&var.prompt, i)? };
+                let res = if no_input { i } else { ask_integer(prompt_text, i)? };
                 vals.insert(var.name.clone(), Value::Integer(res));
                 continue;
             }

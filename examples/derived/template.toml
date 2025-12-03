@@ -11,5 +11,4 @@ validation = "^[a-z]+(\\.[a-z][a-z0-9_]*)*$"
 [[variables]]
 name = "package_path"
 default = "{{ package | replace(from='.', to='/')}}"
-prompt = "Will not be asked since this is a derived variable"
 derived = true
