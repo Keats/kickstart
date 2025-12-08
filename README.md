@@ -236,7 +236,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
 
-### 0.5.1 (2025-08-12)
+### 0.5.1 (2025-12-08)
 
 - New `derived = true` flag allows variables to be computed from default without prompting the user
 - `prompt` remains required for non-derived variables, but is optional when `derived` is set to true
