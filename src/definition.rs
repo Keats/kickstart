@@ -35,13 +35,15 @@ pub struct Variable {
     /// A default value is required. It can be a Tera expression if it is a string.
     pub(crate) default: Value,
     /// The text asked to the user
-    pub prompt: String,
+    pub prompt: Option<String>,
     /// Only for questions with choices
     pub choices: Option<Vec<Value>>,
     /// A regex pattern to validate the input. Only used where the value is meant to be a string.
     pub validation: Option<String>,
     /// Only ask this variable if that condition is true
     pub only_if: Option<Condition>,
+    /// Whether this variable is derived and should not be prompted
+    pub derived: Option<bool>,
 }
 
 /// A hook is a file that will get executed
@@ -132,6 +134,22 @@ impl TemplateDefinition {
         }
 
         for var in &self.variables {
+            if var.prompt.is_none() && !var.derived.unwrap_or(false) {
+                errs.push(format!(
+                    "Variable `{}` must have either a prompt or be marked as derived",
+                    var.name
+                ));
+            }
+
+            if let Some(ref prompt) = var.prompt {
+                if prompt.trim().is_empty() {
+                    errs.push(format!(
+                        "Variable `{}` has an empty prompt, which is not allowed",
+                        var.name
+                    ));
+                }
+            }
+
             let type_str = var.default.type_str();
             types.insert(var.name.to_string(), type_str);
 
@@ -420,5 +438,82 @@ mod tests {
         let expected_value: String = String::from("my_project-other_project-manifest.md");
 
         assert_eq!(got_value, &Value::String(expected_value))
+    }
+
+    #[test]
+    fn can_handle_derived_variable() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+        name = "Test template"
+        description = "Testing derived variable behavior"
+        kickstart_version = 1
+
+        [[variables]]
+        name = "project_name"
+        default = "My project"
+        prompt = "What's the name of your project?"
+
+        [[variables]]
+        name = "slug"
+        default = "{{project_name | slugify}}"
+        derived = true
+        "#,
+        )
+        .unwrap();
+
+        assert_eq!(tpl.variables.len(), 2);
+
+        let res = tpl.default_values();
+        assert!(res.is_ok());
+        let res = res.unwrap();
+
+        // Check that both variables exist
+        assert!(res.contains_key("project_name"));
+        assert!(res.contains_key("slug"));
+
+        // Check that slug was rendered from project_name
+        let expected_slug = Value::String("my-project".to_string());
+        assert_eq!(res.get("slug"), Some(&expected_slug));
+    }
+
+    #[test]
+    fn fails_if_prompt_and_derived_missing() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+            name = "Test template"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "broken_var"
+            default = "some_value"
+            "#,
+        )
+        .unwrap();
+
+        let errs = tpl.validate();
+        assert!(!errs.is_empty());
+        assert!(errs
+            .iter()
+            .any(|e| e.contains("must have either a prompt or be marked as derived")));
+    }
+
+    #[test]
+    fn fails_if_prompt_is_empty() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+            name = "Test template"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "broken_var"
+            default = "some_value"
+            prompt = ""
+            "#,
+        )
+        .unwrap();
+
+        let errs = tpl.validate();
+        assert!(!errs.is_empty());
+        assert!(errs.iter().any(|e| e.contains("empty prompt")));
     }
 }
