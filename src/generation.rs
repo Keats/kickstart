@@ -106,7 +106,7 @@ impl Template {
         Ok(Template { path: buf, definition, variables: HashMap::new(), tmp_dir: tempdir()? })
     }
 
-    fn get_variable_by_name(&self, name: &str) -> Result<&Variable> {
+    pub(crate) fn get_variable_by_name(&self, name: &str) -> Result<&Variable> {
         if let Some(var) = self.definition.variables.iter().find(|v| v.name == name) {
             Ok(var)
         } else {

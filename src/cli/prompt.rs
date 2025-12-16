@@ -41,7 +41,7 @@ pub fn ask_string(prompt: &str, default: &str, validation: &Option<String>) -> R
     let res = match &*input {
         "" => default.to_string(),
         _ => {
-            if let Some(ref pattern) = validation {
+            if let Some(pattern) = validation {
                 let re = Regex::new(pattern).unwrap();
                 if re.is_match(&input) {
                     input

@@ -2,6 +2,8 @@ name = "Super basic"
 description = "A very simple template"
 kickstart_version = 1
 
+ignore = ["test-input.json"]
+
 [[variables]]
 name = "directory_name"
 default = "Hello"

@@ -5,6 +5,7 @@ use std::process::Command as StdCommand;
 use anyhow::{Result, bail};
 use clap::{Parser, Subcommand};
 
+use kickstart::cli::file_input::load_json_input;
 use kickstart::cli::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
 use kickstart::cli::terminal;
 use kickstart::{HookFile, Template, TemplateDefinition, Value};
@@ -30,6 +31,10 @@ pub struct Cli {
     #[clap(long, default_value_t = false)]
     pub no_input: bool,
 
+    /// Path to a JSON file containing variable values (implies --no-input)
+    #[clap(short = 'i', long = "input-file", value_name = "PATH")]
+    pub input_file: Option<PathBuf>,
+
     /// Whether to run all the hooks
     #[clap(long, default_value_t = true)]
     pub run_hooks: bool,
@@ -48,9 +53,15 @@ pub enum Command {
 }
 
 /// Ask all the questions of that template and return the answers.
-/// If `no_input` is `true`, it will automatically pick the defaults without
-/// prompting the user
-fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, Value>> {
+/// If a value exists in `provided_values`, it will be validated and used.
+/// Otherwise:
+/// - if `no_input` is `true`, the default is used without prompting.
+/// - else the user is prompted interactively.
+fn ask_questions(
+    template: &Template,
+    no_input: bool,
+    provided_values: &HashMap<String, Value>,
+) -> Result<HashMap<String, Value>> {
     let mut vals = HashMap::new();
 
     for var in &template.definition.variables {
@@ -63,30 +74,42 @@ fn ask_questions(template: &Template, no_input: bool) -> Result<HashMap<String, 
         if !template.should_ask_variable(&var.name, &vals)? {
             continue;
         }
+
         let default = template.get_default_for(&var.name, &vals)?;
+
+        // Check if value was provided from JSON input
+        if let Some(provided) = provided_values.get(&var.name) {
+            vals.insert(var.name.clone(), provided.clone());
+            continue;
+        }
+
+        // No provided value and input -> use the default
+        if no_input {
+            vals.insert(var.name.clone(), default);
+            continue;
+        }
+
+        // Interactive prompting
         let prompt_text = var.prompt.as_deref().unwrap_or("");
 
         if let Some(ref choices) = var.choices {
-            let res = if no_input { default } else { ask_choices(prompt_text, &default, choices)? };
+            let res = ask_choices(prompt_text, &default, choices)?;
             vals.insert(var.name.clone(), res);
             continue;
         }
 
         match default {
             Value::Boolean(b) => {
-                let res = if no_input { b } else { ask_bool(prompt_text, b)? };
+                let res = ask_bool(prompt_text, b)?;
                 vals.insert(var.name.clone(), Value::Boolean(res));
-                continue;
             }
             Value::String(s) => {
-                let res = if no_input { s } else { ask_string(prompt_text, &s, &var.validation)? };
+                let res = ask_string(prompt_text, &s, &var.validation)?;
                 vals.insert(var.name.clone(), Value::String(res));
-                continue;
             }
             Value::Integer(i) => {
-                let res = if no_input { i } else { ask_integer(prompt_text, i)? };
+                let res = ask_integer(prompt_text, i)?;
                 vals.insert(var.name.clone(), Value::Integer(res));
-                continue;
             }
         }
     }
@@ -126,8 +149,13 @@ fn try_main() -> Result<()> {
             let mut template =
                 Template::from_input(&cli.template.unwrap(), cli.directory.as_deref())?;
 
-            // 1. ask questions
-            let vals = ask_questions(&template, cli.no_input)?;
+            // 1. collect variables (from JSON input or interactive prompts)
+            let (no_input, provided_values) = if let Some(ref input_path) = cli.input_file {
+                (true, load_json_input(input_path, &template)?)
+            } else {
+                (cli.no_input, HashMap::new())
+            };
+            let vals = ask_questions(&template, no_input, &provided_values)?;
             template.set_variables(vals)?;
 
             // 2. run pre-gen hooks
