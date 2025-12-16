@@ -1,4 +1,4 @@
-use serde::{de::Error, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de::Error};
 use std::fmt::Formatter;
 use toml::Value as TomlValue;
 
@@ -34,10 +34,15 @@ impl Value {
         matches!(self, Value::String(..))
     }
 
-    pub(crate) fn as_str(&self) -> Option<&str> {
+    pub(crate) fn is_bool(&self) -> bool {
+        matches!(self, Value::Boolean(..))
+    }
+
+    pub(crate) fn as_string(&self) -> String {
         match *self {
-            Value::String(ref s) => Some(&**s),
-            _ => None,
+            Value::String(ref s) => s.to_string(),
+            Value::Integer(i) => i.to_string(),
+            Value::Boolean(b) => b.to_string(),
         }
     }
 }
@@ -52,7 +57,11 @@ impl<'de> Deserialize<'de> for Value {
             TomlValue::String(s) => Ok(Value::String(s)),
             TomlValue::Integer(i) => Ok(Value::Integer(i)),
             TomlValue::Boolean(b) => Ok(Value::Boolean(b)),
-            _ => Err(D::Error::custom(format!("Value {} (of type `{}`) is not allowed as a value: only strings, integers and boolean are.", v, v.type_str()))),
+            _ => Err(D::Error::custom(format!(
+                "Value {} (of type `{}`) is not allowed as a value: only strings, integers and boolean are.",
+                v,
+                v.type_str()
+            ))),
         }
     }
 }

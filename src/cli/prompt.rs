@@ -1,8 +1,8 @@
 use std::io::{self, BufRead, Write};
 
-use crate::cli::terminal;
-use crate::errors::{new_error, ErrorKind, Result};
 use crate::Value;
+use crate::cli::terminal;
+use crate::errors::{ErrorKind, Result, new_error};
 use regex::Regex;
 
 /// Wait for user input and return what they typed
@@ -85,7 +85,7 @@ pub fn ask_choices(prompt: &str, default: &Value, choices: &[Value]) -> Result<V
     let mut default_index = 1;
 
     for (index, choice) in choices.iter().enumerate() {
-        terminal::bold(&format!("  {}. {}\n", index + 1, choice.as_str().unwrap()));
+        terminal::bold(&format!("  {}. {}\n", index + 1, choice.as_string()));
 
         lines.push(format!("{}", index + 1));
         if choice == default {

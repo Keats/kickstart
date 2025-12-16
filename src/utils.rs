@@ -1,11 +1,11 @@
-use std::fs::{create_dir_all, File};
+use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use memchr::memchr;
 use tera::{Context, Tera};
 
-use crate::errors::{map_io_err, new_error, ErrorKind, Result};
+use crate::errors::{ErrorKind, Result, map_io_err, new_error};
 use crate::filters::register_all_filters;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -42,11 +42,7 @@ pub fn create_directory(path: &Path) -> Result<()> {
 pub fn get_source(input: &str) -> Source {
     let path = Path::new(input);
 
-    if path.is_dir() {
-        Source::Local(path.to_path_buf())
-    } else {
-        Source::Git(input.to_string())
-    }
+    if path.is_dir() { Source::Local(path.to_path_buf()) } else { Source::Git(input.to_string()) }
 }
 
 pub fn render_one_off_template(

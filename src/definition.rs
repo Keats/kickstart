@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 use tera::Context;
 
-use crate::errors::{new_error, ErrorKind, Result};
-use crate::utils::{read_file, render_one_off_template};
 use crate::Value;
+use crate::errors::{ErrorKind, Result, new_error};
+use crate::utils::{read_file, render_one_off_template};
 
 /// A condition for a question to be asked
 /// If the value is different or not found, the question should not be asked.
@@ -153,7 +153,16 @@ impl TemplateDefinition {
             let type_str = var.default.type_str();
             types.insert(var.name.to_string(), type_str);
 
-            if let Some(ref choices) = var.choices {
+            if var.choices.is_some() && var.default.is_bool() {
+                errs.push(format!(
+                    "Variable `{}` is a boolean but a `choices` value is defined",
+                    var.name
+                ))
+            }
+
+            if let Some(ref choices) = var.choices
+                && !var.default.is_bool()
+            {
                 let mut choice_found = false;
                 for c in choices {
                     if *c == var.default {
@@ -197,7 +206,7 @@ impl TemplateDefinition {
 
                 match Regex::new(pattern) {
                     Ok(re) => {
-                        if !re.is_match(var.default.as_str().unwrap()) {
+                        if !re.is_match(&var.default.as_string()) {
                             errs.push(format!(
                                 "Variable `{}` has a default that doesn't pass its validation regex",
                                 var.name
@@ -477,6 +486,28 @@ mod tests {
     }
 
     #[test]
+    fn can_handle_number_choices() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+            name = "Test template"
+            description = "A description"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "count"
+            prompt = "How many?"
+            default = 10
+            choices = [1, 4, 10]
+        "#,
+        )
+        .unwrap();
+
+        assert_eq!(tpl.variables.len(), 1);
+        let res = tpl.default_values();
+        assert!(res.is_ok());
+    }
+
+    #[test]
     fn fails_if_prompt_and_derived_missing() {
         let tpl: TemplateDefinition = toml::from_str(
             r#"
@@ -492,9 +523,9 @@ mod tests {
 
         let errs = tpl.validate();
         assert!(!errs.is_empty());
-        assert!(errs
-            .iter()
-            .any(|e| e.contains("must have either a prompt or be marked as derived")));
+        assert!(
+            errs.iter().any(|e| e.contains("must have either a prompt or be marked as derived"))
+        );
     }
 
     #[test]
@@ -515,5 +546,27 @@ mod tests {
         let errs = tpl.validate();
         assert!(!errs.is_empty());
         assert!(errs.iter().any(|e| e.contains("empty prompt")));
+    }
+
+    #[test]
+    fn fails_with_choices_for_bool_type() {
+        let tpl: TemplateDefinition = toml::from_str(
+            r#"
+            name = "Test template"
+            description = "A description"
+            kickstart_version = 1
+
+            [[variables]]
+            name = "truthy"
+            prompt = "Is it true?"
+            default = false
+            choices = [true, false]
+        "#,
+        )
+        .unwrap();
+
+        let errs = tpl.validate();
+        assert!(!errs.is_empty());
+        assert!(errs.iter().any(|e| e.contains("boolean")));
     }
 }
