@@ -11,22 +11,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [msrv, stable, macos, win-msvc]
+        build: [stable, macos, windows]
         include:
-          - build: msrv
-            os: ubuntu-latest
-            rust: 1.74.0
           - build: stable
             os: ubuntu-latest
             rust: stable
           - build: macos
             os: macOS-latest
             rust: stable
-          - build: win-msvc
-            os: windows-2019
+          - build: windows
+            os: windows-latest
             rust: stable
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
