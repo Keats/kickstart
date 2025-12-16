@@ -58,26 +58,26 @@ pub fn load_json_input(path: &Path, template: &Template) -> Result<HashMap<Strin
         }
 
         // Choices validation
-        if let Some(ref choices) = var.choices {
-            if !choices.contains(&value) {
-                let choices_str: Vec<_> = choices.iter().map(|c| format!("{}", c)).collect();
-                bail!(
-                    "Variable '{}' value '{}' is not in allowed choice: [{}]",
-                    key,
-                    value,
-                    choices_str.join(", ")
-                );
-            }
+        if let Some(ref choices) = var.choices
+            && !choices.contains(&value)
+        {
+            let choices_str: Vec<_> = choices.iter().map(|c| format!("{}", c)).collect();
+            bail!(
+                "Variable '{}' value '{}' is not in allowed choice: [{}]",
+                key,
+                value,
+                choices_str.join(", ")
+            );
         }
 
         // Regex validation
-        if let Some(ref pattern) = var.validation {
-            if let Value::String(s) = &value {
-                let re = Regex::new(pattern)
-                    .with_context(|| format!("Invalid validation regex for '{}'", key))?;
-                if !re.is_match(s) {
-                    bail!("Variable '{}' value '{}' needs to pass the regex: {}", key, s, pattern);
-                }
+        if let Some(ref pattern) = var.validation
+            && let Value::String(s) = &value
+        {
+            let re = Regex::new(pattern)
+                .with_context(|| format!("Invalid validation regex for '{}'", key))?;
+            if !re.is_match(s) {
+                bail!("Variable '{}' value '{}' needs to pass the regex: {}", key, s, pattern);
             }
         }
 

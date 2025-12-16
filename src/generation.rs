@@ -74,7 +74,7 @@ impl Template {
     pub fn from_git(remote: &str, directory: Option<&str>) -> Result<Template> {
         // Clone the remote in git first in /tmp
         let mut tmp = env::temp_dir();
-        tmp.push(remote.split('/').last().unwrap_or("kickstart"));
+        tmp.push(remote.split('/').next_back().unwrap_or("kickstart"));
         if tmp.exists() {
             fs::remove_dir_all(&tmp)?;
         }
@@ -318,7 +318,7 @@ impl Template {
 
             // For patterns, we do not want the output directory to be included
             let glob_real_path = real_path.strip_prefix(&output_dir).expect("valid path");
-            let no_render = patterns.iter().map(|p| p.matches_path(glob_real_path)).any(|x| x);
+            let no_render = patterns.iter().any(|p| p.matches_path(glob_real_path));
 
             if no_render || is_binary(&buffer) {
                 map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
@@ -335,20 +335,20 @@ impl Template {
         }
 
         for cleanup in &self.definition.cleanup {
-            if let Some(val) = self.variables.get(&cleanup.name) {
-                if *val == cleanup.value {
-                    for p in &cleanup.paths {
-                        let actual_path = render_one_off_template(p, &context, None)?;
-                        let path_to_delete = output_dir.join(actual_path).canonicalize()?;
-                        // Avoid path traversals
-                        if !path_to_delete.starts_with(&output_dir) || !path_to_delete.exists() {
-                            continue;
-                        }
-                        if path_to_delete.is_dir() {
-                            map_io_err(fs::remove_dir_all(&path_to_delete), &path_to_delete)?;
-                        } else {
-                            map_io_err(fs::remove_file(&path_to_delete), &path_to_delete)?;
-                        }
+            if let Some(val) = self.variables.get(&cleanup.name)
+                && *val == cleanup.value
+            {
+                for p in &cleanup.paths {
+                    let actual_path = render_one_off_template(p, &context, None)?;
+                    let path_to_delete = output_dir.join(actual_path).canonicalize()?;
+                    // Avoid path traversals
+                    if !path_to_delete.starts_with(&output_dir) || !path_to_delete.exists() {
+                        continue;
+                    }
+                    if path_to_delete.is_dir() {
+                        map_io_err(fs::remove_dir_all(&path_to_delete), &path_to_delete)?;
+                    } else {
+                        map_io_err(fs::remove_file(&path_to_delete), &path_to_delete)?;
                     }
                 }
             }
@@ -369,7 +369,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/complex", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
 
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
@@ -381,7 +381,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/with-directory", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
         assert!(res.is_ok());
         assert!(dir.path().join("template_root").join("Howdy.py").exists());
     }
@@ -391,7 +391,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("./", Some("examples/complex")).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
@@ -403,7 +403,7 @@ mod tests {
         let mut tpl =
             Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
 
         assert!(res.is_ok());
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
@@ -417,7 +417,7 @@ mod tests {
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
 
         assert!(res.is_ok());
         assert!(!dir.path().join("some-project").join("template.toml").exists());
@@ -429,7 +429,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/slugify", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(&dir.path().to_path_buf());
+        let res = tpl.generate(dir.path());
         assert!(res.is_ok());
         assert!(!dir.path().join("template.toml").exists());
         assert!(dir.path().join("hello.md").exists());

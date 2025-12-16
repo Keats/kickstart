@@ -141,13 +141,13 @@ impl TemplateDefinition {
                 ));
             }
 
-            if let Some(ref prompt) = var.prompt {
-                if prompt.trim().is_empty() {
-                    errs.push(format!(
-                        "Variable `{}` has an empty prompt, which is not allowed",
-                        var.name
-                    ));
-                }
+            if let Some(ref prompt) = var.prompt
+                && prompt.trim().is_empty()
+            {
+                errs.push(format!(
+                    "Variable `{}` has an empty prompt, which is not allowed",
+                    var.name
+                ));
             }
 
             let type_str = var.default.type_str();
@@ -276,14 +276,13 @@ impl TemplateDefinition {
 
 #[cfg(test)]
 mod tests {
-    use toml;
 
     use super::*;
 
     #[test]
     fn can_validate_definition() {
         insta::glob!("snapshots/validation/*.toml", |path| {
-            match TemplateDefinition::validate_file(&path) {
+            match TemplateDefinition::validate_file(path) {
                 Ok(errs) => insta::assert_debug_snapshot!(&errs),
                 Err(e) => insta::assert_snapshot!(&e),
             }
