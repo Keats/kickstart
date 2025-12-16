@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command as StdCommand;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{Parser, Subcommand};
 
 use kickstart::cli::prompt::{ask_bool, ask_choices, ask_integer, ask_string};
@@ -101,11 +101,7 @@ fn execute_hook(hook: &HookFile, output_dir: &PathBuf) -> Result<()> {
         command.current_dir(output_dir);
     }
     let code = command.status()?;
-    if code.success() {
-        Ok(())
-    } else {
-        bail!("Hook `{}` exited with a non 0 code\n", hook.name())
-    }
+    if code.success() { Ok(()) } else { bail!("Hook `{}` exited with a non 0 code\n", hook.name()) }
 }
 
 fn try_main() -> Result<()> {

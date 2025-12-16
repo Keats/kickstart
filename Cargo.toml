@@ -1,11 +1,11 @@
 [package]
 authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
 description = "A simple way to get started with a project by scaffolding from a template powered by the Tera engine"
-edition = "2021"
+edition = "2024"
 keywords = ["tera", "scaffolding", "templating", "generator", "boilerplate"]
 license = "MIT"
 name = "kickstart"
-version = "0.5.0"
+version = "0.6.0"
 
 [dependencies]
 glob = "0.3"

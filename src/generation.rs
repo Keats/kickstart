@@ -9,14 +9,14 @@ use std::process::Command;
 use std::str;
 
 use glob::Pattern;
-use tempfile::{tempdir, TempDir};
+use tempfile::{TempDir, tempdir};
 use tera::Context;
 use walkdir::WalkDir;
 
 use crate::definition::{Hook, TemplateDefinition};
-use crate::errors::{map_io_err, new_error, ErrorKind, Result};
+use crate::errors::{ErrorKind, Result, map_io_err, new_error};
 use crate::utils::{
-    create_directory, get_source, is_binary, read_file, render_one_off_template, write_file, Source,
+    Source, create_directory, get_source, is_binary, read_file, render_one_off_template, write_file,
 };
 use crate::{Value, Variable};
 

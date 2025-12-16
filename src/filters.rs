@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use heck::*;
-use tera::{to_value, try_get_value, Result, Tera, Value};
+use tera::{Result, Tera, Value, to_value, try_get_value};
 
 pub fn register_all_filters(tera: &mut Tera) {
     tera.register_filter("upper_camel_case", upper_camel_case);
