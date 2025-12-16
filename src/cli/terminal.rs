@@ -54,7 +54,7 @@ pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &O
     if let Some(mut t) = term::stdout() {
         // check for colour/boldness at the beginning so we can unwrap later
         if !t.supports_color() || !t.supports_attr(term::Attr::Bold) {
-            if let Some(ref pattern) = validation {
+            if let Some(pattern) = validation {
                 write!(t, "{} [default: {}, validation: {}]: ", prompt, default, pattern).unwrap();
             } else {
                 write!(t, "{} [default: {}]: ", prompt, default).unwrap();
@@ -66,7 +66,7 @@ pub fn basic_question<T: fmt::Display>(prompt: &str, default: &T, validation: &O
         write!(t, "{} ", prompt).unwrap();
         t.reset().unwrap();
         t.fg(term::color::YELLOW).unwrap();
-        if let Some(ref pattern) = validation {
+        if let Some(pattern) = validation {
             write!(t, "[default: {}, validation: {}]: ", default, pattern).unwrap();
         } else {
             write!(t, "[default: {}]: ", default).unwrap();

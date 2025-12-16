@@ -501,6 +501,7 @@ dependencies = [
  "memchr",
  "regex",
  "serde",
+ "serde_json",
  "tempfile",
  "tera",
  "term",

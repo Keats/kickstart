@@ -41,5 +41,6 @@ jobs:
           cargo run --features=cli -- examples/default-from-variable/ --no-input -o default
           cargo run --features=cli -- examples/slugify/ --no-input -o slugify
           cargo run --features=cli -- examples/super-basic/ --no-input -o super-basic
+          cargo run --features=cli -- examples/super-basic/ -i examples/super-basic/test-input.json -o super-basic-json
           cargo run --features=cli -- examples/with-directory/ --no-input -o with-directory
           cargo run --features=cli -- examples/derived/ --no-input -o derived
