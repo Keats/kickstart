@@ -142,6 +142,11 @@ prompt = "What is the name of this project?"
 validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
 [[variables]]
+name = "slug"
+default = "{{ project_name | slugify }}"
+derived = true
+
+[[variables]]
 name = "database"
 default = "postgres"
 prompt = "Which database do you want to use?"
@@ -204,10 +209,11 @@ A variable has the following required fields:
 - `name`: the name of the variable in Tera context
 - `default`: the default value for that question, `kickstart` uses that to deduce the type of that value (only string, bool and integer are currently supported). 
 You can use previous variables in the default, eg `"{{ project_name | lower }}"` will replace `project_name` with the value of the variable.
-- `prompt`: the text to display to the user
+- `prompt`: the text to display to the user unless the variable is derived
 
-And three more optional fields:
+and four more optional fields:
 
+- `derived`: set to `true` if the variable should not prompt the user and instead be computed from default
 - `choices`: a list of potential values, `kickstart` will make the user pick one
 - `only_if`: this question will only be asked if the variable `name` has the value `value`
 - `validation`: a Regex pattern to check when getting a string value
@@ -229,6 +235,11 @@ Case conversion filters are provided (_via [heck](https://github.com/withoutboat
 You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
+
+### 0.5.1 (2025-12-08)
+
+- New `derived = true` flag allows variables to be computed from default without prompting the user
+- `prompt` remains required for non-derived variables, but is optional when `derived` is set to true
 
 ### 0.5.0 (2024-12-13)
 
