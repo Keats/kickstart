@@ -14,7 +14,7 @@ regex = "1"
 serde = {version = "1", features = ["derive"]}
 tera = "1"
 heck = "0.5"
-toml = "0.8"
+toml = "0.9"
 walkdir = "2"
 tempfile = "3"
 
