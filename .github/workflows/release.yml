@@ -54,6 +54,10 @@ jobs:
           sudo apt-get install -y make g++ libssl-dev gcc-aarch64-linux-gnu
           rustup target add aarch64-unknown-linux-gnu
 
+      - name: Install Rust crosscompile target (macOS Intel)
+        if: ${{ matrix.target == 'x86_64-apple-darwin' }}
+        run: rustup target add x86_64-apple-darwin
+
       - name: Cargo build
         run: cargo build --features=cli --release --target ${{ matrix.target }}
 
