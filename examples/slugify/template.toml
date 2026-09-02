@@ -1,5 +1,5 @@
 name = "Slugify"
-description = "A template demonstrating the slugify feature"
+description = "A template demonstrating the slug filter"
 kickstart_version = 1
 
 [[variables]]
