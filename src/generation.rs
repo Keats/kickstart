@@ -10,13 +10,13 @@ use std::str;
 
 use glob::Pattern;
 use tempfile::{TempDir, tempdir};
-use tera::Context;
 use walkdir::WalkDir;
 
 use crate::definition::{Hook, TemplateDefinition};
 use crate::errors::{ErrorKind, Result, map_io_err, new_error};
 use crate::utils::{
-    Source, create_directory, get_source, is_binary, read_file, render_one_off_template, write_file,
+    Source, build_context, create_directory, get_source, is_binary, read_file,
+    render_one_off_template, write_file,
 };
 use crate::{Value, Variable};
 
@@ -124,11 +124,7 @@ impl Template {
             Value::Integer(i) => Ok(Value::Integer(*i)),
             Value::Boolean(i) => Ok(Value::Boolean(*i)),
             Value::String(i) => {
-                // TODO: Very inefficient but might be ok?
-                let mut context = Context::new();
-                for (key, val) in vals {
-                    context.insert(key, val);
-                }
+                let context = build_context(vals)?;
                 let rendered_default = render_one_off_template(i, &context, None)?;
                 Ok(Value::String(rendered_default))
             }
@@ -155,10 +151,7 @@ impl Template {
     }
 
     fn get_hooks(&self, hooks: &[Hook]) -> Result<Vec<HookFile>> {
-        let mut context = Context::new();
-        for (key, val) in &self.variables {
-            context.insert(key, val);
-        }
+        let context = build_context(&self.variables)?;
 
         let mut hooks_files = Vec::new();
 
@@ -229,10 +222,7 @@ impl Template {
 
     /// Generate the template at the given output directory
     pub fn generate(&self, output_dir: &Path) -> Result<()> {
-        let mut context = Context::new();
-        for (key, val) in &self.variables {
-            context.insert(key, val);
-        }
+        let context = build_context(&self.variables)?;
 
         if !output_dir.exists() {
             create_directory(output_dir)?;
@@ -369,9 +359,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/complex", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
     }
@@ -381,8 +369,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/with-directory", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(dir.path().join("template_root").join("Howdy.py").exists());
     }
 
@@ -391,8 +378,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("./", Some("examples/complex")).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
     }
@@ -403,9 +389,7 @@ mod tests {
         let mut tpl =
             Template::from_input("https://github.com/Keats/rust-cli-template", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("My-CLI").join("template.toml").exists());
         assert!(dir.path().join("My-CLI").join(".travis.yml").exists());
     }
@@ -417,21 +401,32 @@ mod tests {
             Template::from_input("https://github.com/Keats/kickstart", Some("examples/complex"))
                 .unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
     }
 
     #[test]
-    fn can_generate_handling_slugify() {
+    fn can_generate_handling_slug() {
         let dir = tempdir().unwrap();
         let mut tpl = Template::from_input("examples/slugify", None).unwrap();
         tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
-        let res = tpl.generate(dir.path());
-        assert!(res.is_ok());
+        tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("template.toml").exists());
         assert!(dir.path().join("hello.md").exists());
+    }
+
+    #[test]
+    fn can_generate_with_skipped_only_if_variables() {
+        let dir = tempdir().unwrap();
+        let mut tpl = Template::from_input("examples/complex", None).unwrap();
+        let mut vals = tpl.definition.default_values().unwrap();
+        vals.insert("database".to_string(), Value::String("mysql".to_string()));
+        vals.remove("pg_version");
+        tpl.set_variables(vals).unwrap();
+        tpl.generate(dir.path()).unwrap();
+        let readme = read_file(&dir.path().join("some-project").join("README.md")).unwrap();
+        assert!(readme.contains("The project uses mysql"));
+        assert!(!readme.contains("10.4"));
     }
 }

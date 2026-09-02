@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -6,7 +7,8 @@ use memchr::memchr;
 use tera::{Context, Tera};
 
 use crate::errors::{ErrorKind, Result, map_io_err, new_error};
-use crate::filters::register_all_filters;
+use crate::filters::register_all;
+use crate::value::Value;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Source {
@@ -45,15 +47,18 @@ pub fn get_source(input: &str) -> Source {
     if path.is_dir() { Source::Local(path.to_path_buf()) } else { Source::Git(input.to_string()) }
 }
 
+pub fn build_context(vars: &HashMap<String, Value>) -> Result<Context> {
+    Context::from_serialize(vars).map_err(|err| new_error(ErrorKind::Tera { err, path: None }))
+}
+
 pub fn render_one_off_template(
     content: &str,
     context: &Context,
     path: Option<PathBuf>,
 ) -> Result<String> {
     let mut tera = Tera::default();
-    register_all_filters(&mut tera);
-
-    tera.render_str(content, context).map_err(|err| new_error(ErrorKind::Tera { err, path }))
+    register_all(&mut tera);
+    tera.render_str(content, context, false).map_err(|err| new_error(ErrorKind::Tera { err, path }))
 }
 
 /// Is the buffer from a binary file?
