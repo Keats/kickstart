@@ -261,6 +261,12 @@ impl Template {
             self.path.clone()
         };
 
+        // determine if output_dir is a subdirectory of the template itself. this is used in the
+        // exclusion below; ensuring that if the output dir is **not** a subdirectory of the
+        // template (i.e. the template is a subdirectory of the output dir, as in a monorepo)
+        let start_path_canon = start_path.canonicalize()?;
+        let output_dir_is_inside_template = output_dir.starts_with(&start_path_canon);
+
         // And now generate the files in the output dir given
         let walker = WalkDir::new(&start_path)
             .follow_links(self.definition.follow_symlinks)
@@ -270,7 +276,11 @@ impl Template {
                 let relative_path = e.path().strip_prefix(&start_path).expect("Stripping prefix");
                 if relative_path.starts_with(".git/")
                     || (relative_path.is_dir() && relative_path.starts_with(".git"))
-                    || e.path().canonicalize().expect("to canonicalize").starts_with(&output_dir)
+                    || (output_dir_is_inside_template
+                        && e.path()
+                            .canonicalize()
+                            .expect("to canonicalize")
+                            .starts_with(&output_dir))
                 {
                     return false;
                 }
