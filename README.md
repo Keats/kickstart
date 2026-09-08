@@ -143,7 +143,7 @@ validation = "^([a-zA-Z][a-zA-Z0-9_-]+)$"
 
 [[variables]]
 name = "slug"
-default = "{{ project_name | slugify }}"
+default = "{{ project_name | slug }}"
 derived = true
 
 [[variables]]
@@ -235,6 +235,10 @@ Case conversion filters are provided (_via [heck](https://github.com/withoutboat
 You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ## Changelog
+
+### 0.7.0 (2026-09-02)
+
+- Upgrade to Tera v2, which brings breaking template changes. See the ([migration guide](https://github.com/Keats/tera/blob/master/MIGRATION.md)) for details.
 
 ### 0.6.0 (2025-12-21)
 
