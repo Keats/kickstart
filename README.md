@@ -238,10 +238,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 ### 0.7.0 (2026-09-02)
 
-- Upgrade to Tera v2, which brings breaking template changes ([migration guide](https://github.com/Keats/tera/blob/master/MIGRATION.md)):
-  - The `slugify` filter is now named `slug`
-  - Accessing an undefined variable is now an error rather than rendering empty
-  - The `date` filter now uses jiff format strings
+- Upgrade to Tera v2, which brings breaking template changes. See the ([migration guide](https://github.com/Keats/tera/blob/master/MIGRATION.md)) for details.
 
 ### 0.6.0 (2025-12-21)
 
