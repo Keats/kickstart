@@ -18,8 +18,21 @@ memchr = "2"
 regex = "1"
 serde = { version = "1", features = ["derive"] }
 tempfile = "3"
-tera = { version = "2", features = ["fast"] }
-tera-contrib = { version = "0.3", features = ["date", "slug"] }
+tera = "2"
+tera-contrib = {
+  version = "0.3",
+  features = [
+    "base64",
+    "date",
+    "filesize_format",
+    "format",
+    "json",
+    "rand",
+    "regex",
+    "slug",
+    "urlencode",
+  ]
+}
 toml = "0.9"
 walkdir = "2"
 
@@ -35,7 +48,8 @@ insta = { version = "1.38.0", features = ["glob"] }
 maintenance = { status = "actively-developed" }
 
 [features]
-cli = ["dep:anyhow", "dep:clap", "dep:serde_json", "dep:term"]
+cli = ["dep:anyhow", "dep:clap", "dep:serde_json", "dep:term", "fast"]
+fast = ["tera/fast"]
 required-features = ["cli"]
 
 [profile.dev.package]
