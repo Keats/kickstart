@@ -254,7 +254,7 @@ impl Template {
         // determine if output_dir is a subdirectory of the template itself. this is used in the
         // exclusion below; ensuring that if the output dir is **not** a subdirectory of the
         // template (i.e. the template is a subdirectory of the output dir, as in a monorepo)
-        let start_path_canon = start_path.canonicalize()?;
+        let start_path_canon = map_io_err(start_path.canonicalize(), &start_path)?;
         let output_dir_is_inside_template = output_dir.starts_with(&start_path_canon);
 
         // And now generate the files in the output dir given
@@ -266,11 +266,12 @@ impl Template {
                 let relative_path = e.path().strip_prefix(&start_path).expect("Stripping prefix");
                 if relative_path.starts_with(".git/")
                     || (relative_path.is_dir() && relative_path.starts_with(".git"))
-                    || (output_dir_is_inside_template
-                        && e.path()
-                            .canonicalize()
-                            .expect("to canonicalize")
-                            .starts_with(&output_dir))
+                    || {
+                        let canon = e.path().canonicalize().expect("to canonicalize");
+                        canon.starts_with(&output_dir)
+                            && (output_dir_is_inside_template
+                                || !canon.starts_with(&start_path_canon))
+                    }
                 {
                     return false;
                 }
@@ -438,5 +439,67 @@ mod tests {
         let readme = read_file(&dir.path().join("some-project").join("README.md")).unwrap();
         assert!(readme.contains("The project uses mysql"));
         assert!(!readme.contains("10.4"));
+    }
+
+    // https://github.com/Keats/kickstart/pull/86
+    #[test]
+    fn can_generate_nested_template_in_output_dir() {
+        let dir = tempdir().unwrap();
+        let tpl_dir = dir.path().join("templates").join("basic");
+        fs::create_dir_all(tpl_dir.join("{{directory_name}}")).unwrap();
+        fs::write(
+            tpl_dir.join("template.toml"),
+            r#"
+name = "Basic"
+description = "A basic template"
+kickstart_version = 1
+
+[[variables]]
+name = "directory_name"
+default = "Hello"
+prompt = "Directory name?"
+"#,
+        )
+        .unwrap();
+        fs::write(tpl_dir.join("{{directory_name}}").join("hey.txt"), "hey").unwrap();
+
+        let mut tpl = Template::from_input(tpl_dir.to_str().unwrap(), None).unwrap();
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
+        tpl.generate(dir.path()).unwrap();
+        assert!(dir.path().join("Hello").join("hey.txt").exists());
+    }
+
+    // https://github.com/Keats/kickstart/pull/86
+    // Same as test above but with a symlink pointing to the dir
+    #[test]
+    #[cfg(unix)]
+    fn nested_template_symlink_to_output_dir_does_not_recurse() {
+        let dir = tempdir().unwrap();
+        let tpl_dir = dir.path().join("templates").join("basic");
+        fs::create_dir_all(tpl_dir.join("{{directory_name}}")).unwrap();
+        fs::write(
+            tpl_dir.join("template.toml"),
+            r#"
+name = "Basic"
+description = "A basic template"
+kickstart_version = 1
+follow_symlinks = true
+
+[[variables]]
+name = "directory_name"
+default = "Hello"
+prompt = "Directory name?"
+"#,
+        )
+        .unwrap();
+        fs::write(tpl_dir.join("{{directory_name}}").join("hey.txt"), "hey").unwrap();
+        fs::write(dir.path().join("other.txt"), "other").unwrap();
+        std::os::unix::fs::symlink("../..", tpl_dir.join("link_to_root")).unwrap();
+
+        let mut tpl = Template::from_input(tpl_dir.to_str().unwrap(), None).unwrap();
+        tpl.set_variables(tpl.definition.default_values().unwrap()).unwrap();
+        tpl.generate(dir.path()).unwrap();
+        assert!(dir.path().join("Hello").join("hey.txt").exists());
+        assert!(!dir.path().join("link_to_root").exists());
     }
 }
