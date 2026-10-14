@@ -4,11 +4,10 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
-use tera::Context;
 
 use crate::Value;
 use crate::errors::{ErrorKind, Result, new_error};
-use crate::utils::{read_file, render_one_off_template};
+use crate::utils::{build_context, read_file, render_one_off_template};
 
 /// A condition for a question to be asked
 /// If the value is different or not found, the question should not be asked.
@@ -257,10 +256,7 @@ impl TemplateDefinition {
                     vals.insert(var.name.clone(), Value::Boolean(*b));
                 }
                 Value::String(s) => {
-                    let mut context = Context::new();
-                    for (key, val) in &vals {
-                        context.insert(key, val);
-                    }
+                    let context = build_context(&vals)?;
                     let rendered_default = render_one_off_template(s, &context, None)?;
                     vals.insert(var.name.clone(), Value::String(rendered_default));
                 }
@@ -320,8 +316,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.default_values();
-        assert!(res.is_ok());
+        tpl.default_values().unwrap();
     }
 
     #[test]
@@ -356,9 +351,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 3);
-        let res = tpl.default_values();
-        assert!(res.is_ok());
-        let res = res.unwrap();
+        let res = tpl.default_values().unwrap();
         assert!(!res.contains_key("pg_version"));
     }
 
@@ -398,9 +391,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 4);
-        let res = tpl.default_values();
-        assert!(res.is_ok());
-        let res = res.unwrap();
+        let res = tpl.default_values().unwrap();
         assert!(!res.contains_key("pg_version"));
         assert!(!res.contains_key("pg_bouncer"));
     }
@@ -433,10 +424,7 @@ mod tests {
 
         assert_eq!(tpl.variables.len(), 3);
 
-        let res = tpl.default_values();
-
-        assert!(res.is_ok());
-        let res = res.unwrap();
+        let res = tpl.default_values().unwrap();
 
         assert!(res.contains_key("project_one"));
         assert!(res.contains_key("project_two"));
@@ -463,7 +451,7 @@ mod tests {
 
         [[variables]]
         name = "slug"
-        default = "{{project_name | slugify}}"
+        default = "{{project_name | slug}}"
         derived = true
         "#,
         )
@@ -471,9 +459,7 @@ mod tests {
 
         assert_eq!(tpl.variables.len(), 2);
 
-        let res = tpl.default_values();
-        assert!(res.is_ok());
-        let res = res.unwrap();
+        let res = tpl.default_values().unwrap();
 
         // Check that both variables exist
         assert!(res.contains_key("project_name"));
@@ -502,8 +488,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(tpl.variables.len(), 1);
-        let res = tpl.default_values();
-        assert!(res.is_ok());
+        tpl.default_values().unwrap();
     }
 
     #[test]
