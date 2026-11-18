@@ -312,16 +312,19 @@ impl Template {
                 continue;
             }
 
-            // Only pass non-binary files or the files not matching the copy_without_render patterns through Tera
+            // For patterns, we do not want the output directory to be included
+            let glob_real_path = real_path.strip_prefix(&output_dir).expect("valid path");
+            if patterns.iter().any(|p| p.matches_path(glob_real_path)) {
+                map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
+                continue;
+            }
+
+            // Only pass non-binary files through Tera
             let mut f = File::open(entry.path())?;
             let mut buffer = Vec::new();
             f.read_to_end(&mut buffer)?;
 
-            // For patterns, we do not want the output directory to be included
-            let glob_real_path = real_path.strip_prefix(&output_dir).expect("valid path");
-            let no_render = patterns.iter().any(|p| p.matches_path(glob_real_path));
-
-            if no_render || is_binary(&buffer) {
+            if is_binary(&buffer) {
                 map_io_err(fs::copy(entry.path(), &real_path), entry.path())?;
                 continue;
             }
