@@ -35,8 +35,15 @@ pub struct Cli {
     #[clap(short = 'i', long = "input-file", value_name = "PATH")]
     pub input_file: Option<PathBuf>,
 
-    /// Whether to run all the hooks
-    #[clap(long, default_value_t = true)]
+    /// Whether to run all the hooks, use `--run-hooks=false` to skip them
+    #[clap(
+        long,
+        default_value_t = true,
+        action = clap::ArgAction::Set,
+        num_args = 0..=1,
+        require_equals = true,
+        default_missing_value = "true"
+    )]
     pub run_hooks: bool,
 
     #[clap(subcommand)]
