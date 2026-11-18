@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 #[cfg(unix)]
@@ -56,6 +55,8 @@ pub struct Template {
     path: PathBuf,
     /// Temp dir created to store the hooks after templating
     tmp_dir: TempDir,
+    /// Temp dir holding the cloned repository, if loaded from git
+    clone_dir: Option<TempDir>,
 }
 
 impl Template {
@@ -72,12 +73,10 @@ impl Template {
     /// Load a template from git.
     /// This will clone the repository if possible in the temporary directory of the user
     pub fn from_git(remote: &str, directory: Option<&str>) -> Result<Template> {
-        // Clone the remote in git first in /tmp
-        let mut tmp = env::temp_dir();
-        tmp.push(remote.split('/').next_back().unwrap_or("kickstart"));
-        if tmp.exists() {
-            fs::remove_dir_all(&tmp)?;
-        }
+        // Clone into a fresh temp dir. Building the path from the remote name could point at an
+        // existing folder, or the temp dir itself with a trailing slash, which we then deleted.
+        let clone_dir = tempdir()?;
+        let tmp = clone_dir.path();
 
         // Use git command rather than git2 as it seems there are some issues building it
         // on some platforms:
@@ -86,7 +85,9 @@ impl Template {
             .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
-        Template::from_local(&tmp, directory)
+        let mut template = Template::from_local(tmp, directory)?;
+        template.clone_dir = Some(clone_dir);
+        Ok(template)
     }
 
     /// Load a template from a local path
@@ -103,7 +104,13 @@ impl Template {
         let definition: TemplateDefinition = toml::from_str(&read_file(&conf_path)?)
             .map_err(|err| new_error(ErrorKind::Toml { err }))?;
 
-        Ok(Template { path: buf, definition, variables: HashMap::new(), tmp_dir: tempdir()? })
+        Ok(Template {
+            path: buf,
+            definition,
+            variables: HashMap::new(),
+            tmp_dir: tempdir()?,
+            clone_dir: None,
+        })
     }
 
     pub(crate) fn get_variable_by_name(&self, name: &str) -> Result<&Variable> {
@@ -415,6 +422,29 @@ mod tests {
         tpl.generate(dir.path()).unwrap();
         assert!(!dir.path().join("some-project").join("template.toml").exists());
         assert!(dir.path().join("some-project").join("logo.png").exists());
+    }
+
+    #[test]
+    fn cloning_does_not_delete_existing_temp_folder() {
+        // The repo lives directly in the temp dir, which is where the old code used to clone
+        let repo = tempfile::Builder::new().prefix("kickstart-test").tempdir().unwrap();
+        fs::copy("examples/super-basic/template.toml", repo.path().join("template.toml")).unwrap();
+        let git = |args: &[&str]| {
+            let status = Command::new("git")
+                .args(["-c", "user.name=test", "-c", "user.email=test@test"])
+                .args(args)
+                .current_dir(repo.path())
+                .status()
+                .unwrap();
+            assert!(status.success());
+        };
+        git(&["init", "-q"]);
+        git(&["add", "."]);
+        git(&["commit", "-q", "-m", "init"]);
+
+        let tpl = Template::from_git(&format!("{}", repo.path().display()), None).unwrap();
+        assert!(repo.path().join("template.toml").exists());
+        assert_ne!(tpl.path, repo.path());
     }
 
     #[test]
