@@ -240,6 +240,7 @@ You can use these like any other filter, e.g. `{{variable_name | camel_case}}`.
 
 - Upgrade to Tera v2, which brings breaking template changes. See the ([migration guide](https://github.com/Keats/tera/blob/master/MIGRATION.md)) for details.
 - Bump toml dep to support latest spec
+- Replace `--run-hooks`, which could not turn hooks off, with a `--no-hooks` flag
 
 ### 0.6.0 (2025-12-21)
 

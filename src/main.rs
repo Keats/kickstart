@@ -35,16 +35,9 @@ pub struct Cli {
     #[clap(short = 'i', long = "input-file", value_name = "PATH")]
     pub input_file: Option<PathBuf>,
 
-    /// Whether to run all the hooks, use `--run-hooks=false` to skip them
-    #[clap(
-        long,
-        default_value_t = true,
-        action = clap::ArgAction::Set,
-        num_args = 0..=1,
-        require_equals = true,
-        default_missing_value = "true"
-    )]
-    pub run_hooks: bool,
+    /// Do not run the pre-gen and post-gen hooks of the template
+    #[clap(long, default_value_t = false)]
+    pub no_hooks: bool,
 
     #[clap(subcommand)]
     pub command: Option<Command>,
@@ -167,7 +160,7 @@ fn try_main() -> Result<()> {
 
             // 2. run pre-gen hooks
             let pre_gen_hooks = template.get_pre_gen_hooks()?;
-            if cli.run_hooks && !pre_gen_hooks.is_empty() {
+            if !cli.no_hooks && !pre_gen_hooks.is_empty() {
                 terminal::bold("Running pre-gen hooks...\n");
                 for hook in &pre_gen_hooks {
                     execute_hook(hook, &cli.output_dir)?;
@@ -181,7 +174,7 @@ fn try_main() -> Result<()> {
 
             // 4. run post-gen hooks
             let post_gen_hooks = template.get_post_gen_hooks()?;
-            if cli.run_hooks && !post_gen_hooks.is_empty() {
+            if !cli.no_hooks && !post_gen_hooks.is_empty() {
                 terminal::bold("Running post-gen hooks...\n");
                 for hook in &post_gen_hooks {
                     execute_hook(hook, &cli.output_dir)?;
