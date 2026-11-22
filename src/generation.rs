@@ -83,7 +83,14 @@ impl Template {
         // on some platforms:
         // https://www.reddit.com/r/rust/comments/92mbk5/kickstart_a_scaffolding_tool_to_get_new_projects/e3ahegw
         Command::new("git")
-            .args(["clone", "--recurse-submodules", remote, &format!("{}", tmp.display())])
+            .args([
+                "clone",
+                "--depth=1",
+                "--recurse-submodules",
+                "--shallow-submodules",
+                remote,
+                &format!("{}", tmp.display()),
+            ])
             .output()
             .map_err(|err| new_error(ErrorKind::Git { err }))?;
         Template::from_local(&tmp, directory)
